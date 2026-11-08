@@ -1,0 +1,7 @@
+{
+    "name": "MW2.Editor",
+    "rootNamespace": "MW2.EditorTools",
+    "references": ["MW2.Runtime"],
+    "includePlatforms": ["Editor"],
+    "autoReferenced": true
+}

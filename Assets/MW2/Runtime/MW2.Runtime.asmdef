@@ -1,0 +1,6 @@
+{
+    "name": "MW2.Runtime",
+    "rootNamespace": "MW2",
+    "references": [],
+    "autoReferenced": true
+}
