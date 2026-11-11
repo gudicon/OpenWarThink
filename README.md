@@ -1,5 +1,7 @@
 # OpenWarThink
 
+▶ [Watch the trailer on YouTube](https://www.youtube.com/watch?v=zy5rsdhyjf8)
+
 OpenWarThink is an open-source reimplementation of the engine of the 1996 PC game
 *MechWarrior 2: Mercenaries*, written in Unity (C#). It is the result of reverse engineering
 the original program (disassembly and decompilation of the binaries in our own copies of the
