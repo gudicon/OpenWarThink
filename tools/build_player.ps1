@@ -1,5 +1,7 @@
 param(
     [Parameter(Mandatory = $true)][string]$Destination,
+    # Windows: MW2Mercs.exe; Mac: a universal MW2Mercs.app (needs Mac Build Support (Mono) for this editor).
+    [ValidateSet('Windows', 'Mac')][string]$Target = 'Windows',
     # Unity 6000.3.14f1 editor: -Unity, else $env:UNITY_EDITOR, else the default Unity Hub location.
     [string]$Unity = $(if ($env:UNITY_EDITOR) { $env:UNITY_EDITOR } else { Join-Path $env:ProgramFiles 'Unity/Hub/Editor/6000.3.14f1/Editor/Unity.exe' })
 )
@@ -28,13 +30,15 @@ $manifest = [ordered]@{
     head = (& git -C $repo rev-parse HEAD)
     changes = @(& git -C $repo status --short -- Assets Packages ProjectSettings)
     unity = $Unity
+    target = $Target
     sources = @($sources)
 }
 $manifest | ConvertTo-Json -Depth 5 | Set-Content -LiteralPath (Join-Path $dest 'inputs.json') -Encoding UTF8
-$arguments = '-batchmode -nographics -quit -projectPath "{0}" -executeMethod MW2.EditorTools.Mw2PlayerBuild.Windows --mw2-build-output "{1}" -logFile "{2}"' -f $project, $player, $log
+$arguments = '-batchmode -nographics -quit -projectPath "{0}" -executeMethod MW2.EditorTools.Mw2PlayerBuild.{3} --mw2-build-output "{1}" -logFile "{2}"' -f $project, $player, $log, $Target
 $process = Start-Process -FilePath $Unity -ArgumentList $arguments -WindowStyle Hidden -PassThru -Wait
 if ($process.ExitCode -ne 0) { throw "Unity build exited $($process.ExitCode); see $log" }
-if (-not (Test-Path -LiteralPath (Join-Path $player 'MW2Mercs.exe'))) { throw "Unity did not produce a Player; see $log" }
+$entry = if ($Target -eq 'Mac') { 'MW2Mercs.app/Contents/MacOS/MW2Mercs' } else { 'MW2Mercs.exe' }
+if (-not (Test-Path -LiteralPath (Join-Path $player $entry))) { throw "Unity did not produce a Player; see $log" }
 $files = Get-ChildItem -LiteralPath $player -Recurse -File | Sort-Object FullName | ForEach-Object {
     [ordered]@{ path = $_.FullName.Substring($player.Length + 1).Replace('\', '/'); sha256 = (Get-FileHash -LiteralPath $_.FullName -Algorithm SHA256).Hash }
 }
