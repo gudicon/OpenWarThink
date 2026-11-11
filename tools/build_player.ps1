@@ -21,10 +21,10 @@ if ($LASTEXITCODE -ne 0) { throw 'git ls-files failed' }
 if (-not ($paths -contains 'Assets/MW2/Editor/Mw2PlayerBuild.cs')) { throw 'Track the build entry point before building' }
 $sources = foreach ($relative in $paths) {
     $source = Join-Path $repo $relative
-    $target = Join-Path $project $relative
-    New-Item -ItemType Directory -Path (Split-Path $target) -Force | Out-Null
-    Copy-Item -LiteralPath $source -Destination $target
-    [ordered]@{ path = $relative; sha256 = (Get-FileHash -LiteralPath $target -Algorithm SHA256).Hash }
+    $copy = Join-Path $project $relative
+    New-Item -ItemType Directory -Path (Split-Path $copy) -Force | Out-Null
+    Copy-Item -LiteralPath $source -Destination $copy
+    [ordered]@{ path = $relative; sha256 = (Get-FileHash -LiteralPath $copy -Algorithm SHA256).Hash }
 }
 $manifest = [ordered]@{
     head = (& git -C $repo rev-parse HEAD)
