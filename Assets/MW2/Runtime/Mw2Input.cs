@@ -128,7 +128,8 @@ namespace MW2
             // mercsw.dll is needed only until input.json has been extracted.
             if (string.IsNullOrEmpty(folder) ||
                 !TableStore.Default.Has(InputSystem.TableName) && !File.Exists(Path.Combine(folder, "mercsw.dll"))) return false;
-            System = InputSystem.Get(folder); // tables from input.json, maps from the game folder
+            // Tables from input.json, maps from the game folder, the player's bindings over them (Mw2Controls).
+            System = InputSystem.Get(folder, null, Mw2Controls.Profile);
             // FUN_1002ca6b: the original shows these in a message box.
             foreach (var e in System.Errors) Debug.LogWarning($"MW2 input: {e}");
             return true;
@@ -227,5 +228,30 @@ namespace MW2
         }
 
         public static bool Loaded { get { Poll(); return System != null; } }
+
+        /// <summary>Rebuilds the input layer on the next poll (after the player's bindings change).</summary>
+        public static void Reload() => System = null;
+
+        /// <summary>The keyboard name index a Unity key reports (-1 when the keyboard driver has none).</summary>
+        public static int BitForKey(KeyCode key) => key == KeyCode.None ? -1 : global::System.Array.IndexOf(KeyboardBits, key);
+
+        /// <summary>The Unity key behind a keyboard name index (None when unknown).</summary>
+        public static KeyCode KeyForBit(int bit) => bit >= 0 && bit < KeyboardBits.Length ? KeyboardBits[bit] : KeyCode.None;
+
+        /// <summary>The gamekey code a Unity key posts with these modifiers (0 when it posts none).</summary>
+        public static int CommandCode(InputSystem s, KeyCode key, bool ctrl, bool alt, bool shift)
+        {
+            foreach (var (k, vk, ch) in VirtualKeys)
+                if (k == key) return s.KeyCode(vk, ch, ctrl, alt, shift);
+            return 0;
+        }
+
+        /// <summary>The Unity key that posts this code without modifiers (None when no key does).</summary>
+        public static KeyCode KeyForCommandCode(InputSystem s, int code)
+        {
+            foreach (var (k, vk, ch) in VirtualKeys)
+                if (s.KeyCode(vk, ch, false, false, false) == code) return k;
+            return KeyCode.None;
+        }
     }
 }

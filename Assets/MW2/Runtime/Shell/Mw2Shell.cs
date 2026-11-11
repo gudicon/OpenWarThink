@@ -917,7 +917,7 @@ namespace MW2.Shell
         static readonly int[] PortedCommands =
         {
             ShellMenu.NewMercenary, ShellMenu.FleeToWindows, ShellMenu.SaveLoad, ShellMenu.Retire, ShellMenu.Dropship, ShellMenu.MercLords,
-            ShellMenu.CombatVariables, ShellMenu.FirstCircuit,
+            ShellMenu.CombatVariables, ShellMenu.FirstCircuit, ShellMenu.CockpitControls,
             ShellMenu.Newsfeed, ShellMenu.Contracts, ShellMenu.Personnel, ShellMenu.Inventory, ShellMenu.Financial,
             ShellMenu.Repair, ShellMenu.ArmsMerchant, ShellMenu.MechFactory, ShellMenu.Customization,
             ShellMenu.WeaponsGrouping, ShellMenu.DutyRoster, ShellMenu.LaunchMission
@@ -938,9 +938,9 @@ namespace MW2.Shell
         /// FUN_1004228f (a mode-0 career anywhere, a docked mode-1 career only Inventory / Financial / Repair / Duty Roster
         /// / Launch, otherwise when registered; +0x23ba makes the screen accept first); on the salvage screen five of them
         /// call its screen function directly, which the port leaves out. Dropship: 0xc016 except from the title, the
-        /// briefing and the debriefing. Merc Lords and Combat Variables open their hooks. The First Circuit too. Not ported: Cockpit
-        /// Controls (FUN_1000f864), Movie Playback (dialog 0x8a), Video Options
-        /// (FUN_1005c4d6) and the WinHelp items.
+        /// briefing and the debriefing. Merc Lords and Combat Variables open their hooks. The First Circuit too. Cockpit
+        /// Controls opens the port's own bindings screen (ControlsScreen) instead of FUN_1000f864. Not ported: Movie
+        /// Playback (dialog 0x8a), Video Options (FUN_1005c4d6) and the WinHelp items.
         /// </summary>
         public void MenuCommand(int id)
         {
@@ -954,6 +954,13 @@ namespace MW2.Shell
                     Menu.Enable(ShellMenu.CombatVariables, false);
                     Menu.Enable(ShellMenu.SaveLoad, false);
                     CombatVariablesScreen.Open(this);
+                    break;
+                case ShellMenu.CockpitControls:
+                    // Port extension: a bindings screen over the game's maps, opened as a hook like Merc Lords.
+                    CloseHook();
+                    Menu.Enable(ShellMenu.CockpitControls, false);
+                    Menu.Enable(ShellMenu.SaveLoad, false);
+                    ControlsScreen.Open(this);
                     break;
                 case ShellMenu.FirstCircuit:
                     // FUN_100440bc, The First Circuit and Save/Load off, FUN_1000fe40.
@@ -1157,6 +1164,7 @@ namespace MW2.Shell
                 else GUI.DrawTexture(r, _screen);
             }
             DrawMenu(r);
+            if (ControlsScreen.IsOpen) ControlsScreen.Draw();
             if (_dialogLines != null && Event.current.type == EventType.Repaint) DrawDialog();
         }
 

@@ -110,21 +110,22 @@ namespace MW2.Formats
         public const string TableName = "input";
 
         /// <summary>Reads the tables from mercsw.dll and the two maps from the game folder.</summary>
-        public static InputSystem Load(string gameFolder) =>
-            WithMaps(FromDll(File.ReadAllBytes(Path.Combine(gameFolder, "mercsw.dll"))), gameFolder);
+        public static InputSystem Load(string gameFolder, ControlProfile profile = null) =>
+            WithMaps(FromDll(File.ReadAllBytes(Path.Combine(gameFolder, "mercsw.dll"))), gameFolder, profile);
 
         /// <summary>
         /// What the game uses: the tables from the extracted input.json (written from mercsw.dll on first use) and the
-        /// two maps from the game folder, which are the player's own data files and stay there.
+        /// two maps from the game folder, which are the player's own data files and stay there. A
+        /// <paramref name="profile"/> lays the player's changed bindings over the two maps (see ControlBindings).
         /// </summary>
-        public static InputSystem Get(string gameFolder, TableStore store = null)
+        public static InputSystem Get(string gameFolder, TableStore store = null, ControlProfile profile = null)
         {
             if (store == null) store = TableStore.Default;
             var file = store.Extract(TableName, () => InputTableFile.From(FromDll(File.ReadAllBytes(Path.Combine(gameFolder, "mercsw.dll")))));
             if (file.Format != InputTableFile.CurrentFormat)
                 throw new InvalidDataException($"{store.PathFor(TableName)} has format {file.Format}, this build reads " +
                     $"{InputTableFile.CurrentFormat}: move it aside (keeping your edits) and run MW2 -> Tables -> Extract missing.");
-            return WithMaps(file.ToSystem(), gameFolder);
+            return WithMaps(file.ToSystem(), gameFolder, profile);
         }
 
         /// <summary>The 0xbe raw records of the command table 0x10095148 (FromDll keeps the first id of a name).</summary>
@@ -143,16 +144,32 @@ namespace MW2.Formats
             CommandByCode[0x171] = 0x71;
         }
 
-        static InputSystem WithMaps(InputSystem s, string gameFolder)
+        static InputSystem WithMaps(InputSystem s, string gameFolder, ControlProfile profile = null)
         {
-            string inputw = Path.Combine(gameFolder, "inputw.map");
-            if (File.Exists(inputw)) s.ParseInputMap(File.ReadAllLines(inputw));
-            else s.Errors.Add("Can't open input mapping file");
-            string gamekey = Path.Combine(gameFolder, "gamekey.map");
-            if (File.Exists(gamekey)) s.ParseGameKeys(File.ReadAllLines(gamekey));
+            string[] inputw = ReadMap(gameFolder, "inputw.map");
+            if (inputw == null) s.Errors.Add("Can't open input mapping file");
+            if (profile != null && profile.Actions.Count > 0)
+                inputw = ControlBindings.BuildInputMap(inputw, profile, s.KeyName(ShiftBit), s.KeyName(ControlBit));
+            if (inputw != null) s.ParseInputMap(inputw);
+            string[] gamekey = ReadMap(gameFolder, "gamekey.map");
+            if (gamekey != null) s.ParseGameKeys(gamekey);
             else s.Errors.Add("Can't open gamekey mapping file");
+            ControlBindings.ApplyCommands(s, profile);
             return s;
         }
+
+        /// <summary>A map file of the game folder (inputw.map, gamekey.map), or null when it is missing.</summary>
+        public static string[] ReadMap(string gameFolder, string name)
+        {
+            string path = Path.Combine(gameFolder ?? "", name);
+            return File.Exists(path) ? File.ReadAllLines(path) : null;
+        }
+
+        /// <summary>Keyboard name indices the keyboard driver reports for any Shift / Ctrl (0x1002de98).</summary>
+        public const int ShiftBit = 0x76, ControlBit = 0x77;
+
+        /// <summary>The keyboard key name at a bit of the name table 0x10097530 ("" when unnamed).</summary>
+        public string KeyName(int bit) => bit >= 0 && bit < KeyboardNames.Length ? KeyboardNames[bit] : "";
 
         public static InputSystem FromDll(byte[] d)
         {
