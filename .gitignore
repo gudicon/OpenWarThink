@@ -47,6 +47,10 @@ __pycache__/
 /build.log
 /ProjectSettings/SceneTemplateSettings.json
 
+# Disc music ripped from your own copy of the game; never commit it
+/Assets/StreamingAssets/MW2Music/
+/Assets/StreamingAssets/MW2Music.meta
+
 # OpenWarThink: never commit original game files or material derived from them
 *.dll
 *.DLL

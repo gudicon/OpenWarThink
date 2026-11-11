@@ -163,6 +163,9 @@ namespace MW2
         {
             string dir = Path.GetDirectoryName(PrjPath) ?? "";
             string file = Path.Combine(dir, "CD", track.ToString("00") + ".ogg");
+            // Standalone ports can bundle the disc audio without modifying the original installation.
+            if (!File.Exists(file))
+                file = Path.Combine(Application.dataPath, "StreamingAssets", "MW2Music", track.ToString("00") + ".ogg");
             if (!File.Exists(file))
             {
                 Debug.Log($"MW2: no CD track {track} ({file})");
