@@ -127,7 +127,7 @@ namespace MW2
             {
                 var others = _controls.Conflicts(item.BindAction, item.BindCommand);
                 if (others.Count > 0) return "!Same keys as " + string.Join(", ", others);
-                return "Enter adds a key, Backspace removes the last";
+                return "Enter: add key   Bksp: remove";
             }
             return "";
         }
