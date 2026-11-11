@@ -13,6 +13,12 @@ run it. No original MechWarrior 2: Mercenaries files are included in the build.
 `inputs.json`, `player-files.json` and `unity-build.log` record which sources went into the
 build and what came out; the build reads the git-tracked files of the current working tree.
 
+For macOS add `-Target Mac` (needs Mac Build Support (Mono) installed for the same Unity version): it builds
+a universal `MW2Mercs.app` for Intel and Apple silicon. Built on Windows it is not signed by an Apple developer
+account; on the Mac run `xattr -dr com.apple.quarantine MW2Mercs.app` once (and, if macOS still refuses it,
+`codesign --force --deep -s - MW2Mercs.app`). Zip the app with Unix permissions, or unzip it only on the Mac:
+a copy made through a Windows folder loses the executable bit.
+
 If Unity is not in the default Unity Hub folder, pass `-Unity <path to Unity.exe>` or set the
 `UNITY_EDITOR` environment variable.
 

@@ -39,7 +39,8 @@ Work in progress. What works today, with your own copy of the game:
 - cockpit, HUD, radar and map, sound, mission music;
 - the Mercenaries shell: career, contracts, finances, MechLab, repair, salvage, saving and loading,
   Instant Action and random missions;
-- MercNet multiplayer over a local network.
+- MercNet multiplayer over a local network;
+- Windows (64-bit) and macOS 12+ (Intel and Apple silicon).
 
 The whole story campaign has been played through to its ending by automated pilots
 (`Assets/MW2/Runtime/Autopilot`) in Fair mode (difficulty 2, no invulnerability, no unlimited
@@ -73,6 +74,12 @@ the original game.
 
 ## Quick start
 
+**To play**, download a build for Windows or macOS from
+[Releases](https://github.com/gudicon/OpenWarThink/releases) and point it at your *Mercenaries*
+folder; the release notes explain each step.
+
+**To work on the code:**
+
 1. Clone the repository and open it in Unity.
 2. Use **MW2 → Import Window**, point it at your *Mercenaries* folder and import (you can
    also set the `MW2_GAME_FOLDER` environment variable; the repository has no default path). The
@@ -81,7 +88,8 @@ the original game.
    `mercsw.dll` / `MW2SHELL.DLL`.
 4. Open `Assets/mercenaries.unity` and press Play.
 
-Windows Player build: `./tools/build_player.ps1 -Destination <new folder>`, see
+Player build: `./tools/build_player.ps1 -Destination <new folder>` for Windows, add `-Target Mac`
+for a universal macOS app (needs Mac Build Support (Mono) for the editor), see
 [tools/README.md](tools/README.md). The scene is also listed in Build Settings, so
 **File → Build Profiles → Build** works too.
 
