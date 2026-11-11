@@ -15,6 +15,8 @@ namespace MW2
     ///                       (Menu_DrawValueCycle 0x1003daaa)
     ///   Flee to Windows  -> "FLEE TO WINDOWS" 0x10099908: Confirm your cowardice / Accept (Esc to cancel) (0x1001f908)
     ///   Accept (Esc to cancel)
+    /// Port extension: "Cockpit Controls" after Combat Variables opens key binding pages drawn and run like the
+    /// original pages (Mw2CockpitControlsMenu).
     /// Engine (Window_RunActive 0x1003c8c8 -> Window_Draw 0x1003c9ba -> Menu_DrawPage 0x1003cb59, keys Menu_ReadKey
     /// 0x1003c6a0 / Menu_KeyToAction 0x1003ca92): window flags 0x11 (1: arrows, Enter, Tab and the menu_ channels, and the
     /// input holds only menu_ channels while open; 0x10: the background's left edge on the window's), 9 lines, colours
@@ -39,6 +41,11 @@ namespace MW2
             public MainValue Value;
             public Action Confirm;      // 0x1001f870 / 0x1001f908: run on Enter or its digit
             public MainPage Sub;
+            // Port extension (key binding rows): the bound keys for the value column (ValueText instead while it
+            // waits for a key), and the action or command the row binds.
+            public Func<string> ValueText;
+            public Func<List<string>> ValueParts;
+            public string BindAction, BindCommand;
         }
 
         /// <summary>
@@ -63,6 +70,10 @@ namespace MW2
             public int State;           // +0: 0 -> 1 set up values, 2 running, 3 open sub-page, 4 accept, 5 cancel
             public int Selected;        // +0x10
             public readonly List<MainItem> Items = new List<MainItem>();
+            // Port extension (key binding pages): run when the page is opened / left by accept / left by cancel, and
+            // the hint drawn under the title (a leading '!' marks a warning).
+            public Action Opened, Accepted, Cancelled;
+            public Func<string> Hint;
         }
 
         const int MainLines = 9;                                    // descriptor [0xf]
@@ -132,6 +143,7 @@ namespace MW2
             root.Items.Add(new MainItem { Type = 0, Text = "Abort Mission", Sub = abort });
             root.Items.Add(new MainItem { Type = 0, Text = "Audio Ctrl", Sub = audio });
             root.Items.Add(new MainItem { Type = 0, Text = "Combat Variables", Sub = combat });
+            root.Items.Add(new MainItem { Type = 0, Text = "Cockpit Controls", Sub = BuildControlsMenu() });   // port extension
             root.Items.Add(new MainItem { Type = 0, Text = "Flee to Windows", Sub = flee });
             root.Items.Add(Accept());
             return root;
@@ -213,12 +225,14 @@ namespace MW2
             }
             _menuClock += Time.unscaledDeltaTime * MechMotion.TicksPerSecond;
             ReadMainMenuKey();
+            if (UpdateControlsCapture()) return;   // port extension: a key binding row waits for a key
             RunMainPage();
             if (_mainStack.Count == 0) CloseMainMenu();
         }
 
         void CloseMainMenu()
         {
+            DropControlsEdit();
             SystemsStatusOpen = false;
             Mw2Pause.MainMenuOpen = false;
             _mainStack.Clear();
@@ -364,11 +378,14 @@ namespace MW2
                 if (sub != null && _mainStack.Count < 8)
                 {
                     _mainStack.Add(sub);
+                    sub.Opened?.Invoke();
                     PlayMenuSound(MainSoundOpen);
                 }
             }
             else if (page.State == 4 || page.State == 5)
             {
+                if (page.State == 4) page.Accepted?.Invoke();
+                else page.Cancelled?.Invoke();
                 page.State = 0;
                 page.Selected = 0;
                 _mainStack.RemoveAt(_mainStack.Count - 1);
@@ -509,11 +526,14 @@ namespace MW2
             float x0 = (SystemsStatusOpen ? 0x8ccd / 65536f : 0.25f) * Screen.width;
             float y0 = (SystemsStatusOpen ? 0x547b / 65536f : 0.2f) * Screen.height;
             float w = Screen.width - x0, h = (SystemsStatusOpen ? 0x9eb8 / 65536f : 0.8f) * Screen.height - y0;
+            float panelRight = Screen.width - TextWidth("  ");
             if (!SystemsStatusOpen && MenuBackground != null && MenuBackground.Texture != null)
             {
                 float bw = MenuBackground.Texture.width * Px, bh = MenuBackground.Texture.height * Py;
-                GUI.DrawTexture(new Rect(x0 - MenuBackground.HotX * Px, Screen.height * 0.5f - bh / 2f - MenuBackground.HotY * Py, bw, bh),
+                float bx = x0 - MenuBackground.HotX * Px;
+                GUI.DrawTexture(new Rect(bx, Screen.height * 0.5f - bh / 2f - MenuBackground.HotY * Py, bw, bh),
                                 MenuBackground.Texture);
+                panelRight = bx + bw * 0.94f;   // inside the frame of WESCSIM6 (port extension rows are clipped here)
             }
             var page = _mainStack[_mainStack.Count - 1];
             int lines = SystemsStatusOpen ? 6 : MainLines;
@@ -527,6 +547,18 @@ namespace MW2
             for (int i = 0; i < page.Items.Count; i++) if (page.Items[i].Type == 2 || page.Items[i].Type == 6) exit = i;
             float numberX = x0 + (SystemsStatusOpen ? 0x51f / 65536f : 0.04f) * w;
             float textX = numberX + TextWidth("00."), valueX = x0 + (SystemsStatusOpen ? 0xcccd / 65536f : 0.47f) * w;
+            // Port extension: key binding pages show their hint (keys, conflicts, messages) under the title, inside the
+            // frame, and start their value column after the longest row name.
+            if (page.Hint != null)
+            {
+                string hint = page.Hint() ?? "";
+                bool warning = hint.StartsWith("!");
+                if (warning) hint = hint.Substring(1);
+                DrawText(FitText(hint, panelRight - titleX), new Vector2(titleX, titleY + row * 0.8f), warning ? MainSelected : MainNormal);
+            }
+            float labels = 0;
+            foreach (var it in page.Items) if (it.ValueParts != null) labels = Mathf.Max(labels, TextWidth(it.Text));
+            if (labels > 0) valueX = Mathf.Min(valueX, textX + labels + TextWidth("   "));
             float y = y0 + 2f * row;
             int number = 0;
             for (int i = 0; i < page.Items.Count; i++)
@@ -538,6 +570,15 @@ namespace MW2
                 {
                     number = i == exit ? 0 : number + 1;
                     DrawText(number.ToString(), new Vector2(numberX, rowY), color);
+                }
+                if (item.ValueParts != null)
+                {
+                    // Port extension: a key binding row, its keys in the value column, clipped to the frame.
+                    DrawText(FitText(item.Text, valueX - textX - TextWidth(" ")), new Vector2(textX, rowY), color);
+                    string waiting = item.ValueText?.Invoke();
+                    float room = panelRight - valueX;
+                    DrawText(waiting != null ? FitText(waiting, room) : FitParts(item.ValueParts(), room), new Vector2(valueX, rowY), color);
+                    continue;
                 }
                 DrawText(item.Text, new Vector2(textX, rowY), color);
                 var v = item.Value;

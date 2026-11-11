@@ -98,10 +98,12 @@ for a universal macOS app (needs Mac Build Support (Mono) for the editor), see
 Keys follow the original *Mercenaries* key card; camera keys follow the installed `inputw.map`.
 
 **Remapping:** in the shell, move the mouse to the top of the screen and open **Options → Cockpit
-Controls**. Every cockpit action (movement, torso, jump jets, weapons, view) can be bound to any
-keys, with Shift or Ctrl, and to mouse buttons; every command (lance orders, HUD, targeting,
-MASC, …) to any key with Shift, Ctrl or Alt. Click **+** and press a key to add a binding, click a
-binding to remove it. Your bindings are saved to `controls.json` in your user-data folder
+Controls**; in a mission, press **Esc** and choose **Cockpit Controls** (the game stays paused, and
+new bindings apply as soon as you accept them). Every cockpit action (movement, torso, jump jets,
+weapons, view) can be bound to any keys, with Shift or Ctrl, and to mouse buttons; every command
+(lance orders, HUD, targeting, MASC, …) to any key with Shift, Ctrl or Alt. In the shell, click
+**ADD KEY** and press a key, click a key to remove it; in a mission, pick a row, press Enter and then
+the key, and Backspace removes the last one. Your bindings are saved to `controls.json` in your user-data folder
 (`%USERPROFILE%\AppData\LocalLow\OpenWarThink\MW2Mercs`); the game's own map files are not
 changed, and deleting the file restores the original controls. Commands can't use mouse buttons,
 cockpit actions can't use Alt, and the mouse axes are not remappable. This screen is an addition

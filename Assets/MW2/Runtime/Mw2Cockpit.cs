@@ -361,6 +361,11 @@ namespace MW2
         void OnGUI()
         {
             if (!IsPlayer || Event.current.type != EventType.Repaint) return;
+            DrawCockpitGui();
+        }
+
+        void DrawCockpitGui()
+        {
             DrawMapScreen();
             DrawHudFrame();
             // FUN_10049880 0x10049880 after the HUD in the pause mode: PAUSED at its own size, centred in the rectangle

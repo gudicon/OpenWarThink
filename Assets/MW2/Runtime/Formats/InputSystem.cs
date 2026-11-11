@@ -447,6 +447,26 @@ namespace MW2.Formats
             return true;
         }
 
+        /// <summary>
+        /// Port adapter for bindings changed during a mission: takes over the control block (throttle, torso, toggles
+        /// such as reverse) and the analog sink values of the input layer this one replaces, so nothing jumps when the
+        /// new bindings take effect.
+        /// </summary>
+        public void CarryStateFrom(InputSystem old)
+        {
+            if (old == null) return;
+            Array.Copy(old.Block, Block, BlockSize);
+            Array.Copy(old.Floats, Floats, Floats.Length);
+            foreach (var s in _sinks)
+            {
+                // The same channel keeps its exact fixed-point value; a sink the old layer lacked starts from its float.
+                var before = old._sinks.Find(o => o.Offset == s.Offset);
+                s.Value = before != null ? before.Value : ValueFromFloat(s);
+                s.Vel = 0;
+                s.Touched = false;
+            }
+        }
+
         /// <summary>The sink's value from its current float (the _set branch of 0x1002c516 / 0x1002c266).</summary>
         int ValueFromFloat(Sink s)
         {

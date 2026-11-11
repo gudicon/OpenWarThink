@@ -20,6 +20,7 @@ namespace MW2
     public static class Mw2Input
     {
         public static InputSystem System { get; private set; }
+        static InputSystem _replaced;   // the layer Reload dropped; its control block carries over
         static string _folder;
         static int _frame = -1;
         static double _clock;
@@ -118,7 +119,7 @@ namespace MW2
                 }
                 return _folder;
             }
-            set { _folder = value; System = null; Mw2Options.Reset(); }
+            set { _folder = value; System = null; _replaced = null; Mw2Options.Reset(); }
         }
 
         static bool EnsureLoaded()
@@ -130,6 +131,8 @@ namespace MW2
                 !TableStore.Default.Has(InputSystem.TableName) && !File.Exists(Path.Combine(folder, "mercsw.dll"))) return false;
             // Tables from input.json, maps from the game folder, the player's bindings over them (Mw2Controls).
             System = InputSystem.Get(folder, null, Mw2Controls.Profile);
+            System.CarryStateFrom(_replaced);
+            _replaced = null;
             // FUN_1002ca6b: the original shows these in a message box.
             foreach (var e in System.Errors) Debug.LogWarning($"MW2 input: {e}");
             return true;
@@ -230,7 +233,11 @@ namespace MW2
         public static bool Loaded { get { Poll(); return System != null; } }
 
         /// <summary>Rebuilds the input layer on the next poll (after the player's bindings change).</summary>
-        public static void Reload() => System = null;
+        public static void Reload()
+        {
+            if (System != null) _replaced = System;
+            System = null;
+        }
 
         /// <summary>The keyboard name index a Unity key reports (-1 when the keyboard driver has none).</summary>
         public static int BitForKey(KeyCode key) => key == KeyCode.None ? -1 : global::System.Array.IndexOf(KeyboardBits, key);

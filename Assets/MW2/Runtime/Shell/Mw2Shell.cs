@@ -845,7 +845,7 @@ namespace MW2.Shell
         }
 
         /// <summary>The 640x480 picture fitted into the window with its 4:3 shape; movies use a centered 320x200 viewport.</summary>
-        Rect ScreenRect()
+        internal Rect ScreenRect()
         {
             float aspect = 4f / 3f;
             float w = Screen.width, h = Screen.height;
@@ -1164,7 +1164,7 @@ namespace MW2.Shell
                 else GUI.DrawTexture(r, _screen);
             }
             DrawMenu(r);
-            if (ControlsScreen.IsOpen) ControlsScreen.Draw();
+            ControlsScreen.Draw(this);
             if (_dialogLines != null && Event.current.type == EventType.Repaint) DrawDialog();
         }
 
