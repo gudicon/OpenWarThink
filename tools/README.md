@@ -42,3 +42,24 @@ Self-test of a built Player:
 ```powershell
 ./MW2Mercs.exe -batchmode -nographics --mw2-selftest --seed 12345 --output <new-folder> --game-folder <game-folder>
 ```
+
+## Mission music
+
+Mission music is played from `NN.ogg` files (`02.ogg`, `03.ogg`, …), one per audio track of the
+game disc. OpenWarThink looks for them in two places, in this order:
+
+1. `<game folder>\CD\NN.ogg`, the layout of installations that already have the music as files;
+2. `MW2Mercs_Data\StreamingAssets\MW2Music\NN.ogg` next to `MW2Mercs.exe` (in the Unity Editor:
+   `Assets\StreamingAssets\MW2Music`), so you can add music without changing your game folder.
+
+If your installation has no `CD` folder, cut the music from a BIN/CUE image of your own
+*Mercenaries* disc (the Titanium image keeps the music only in the BIN, as audio tracks):
+
+```powershell
+pip install numpy soundfile
+python tools/rip_cue_music.py "<path to Mercenaries.cue>" "<Player folder>\MW2Mercs_Data\StreamingAssets\MW2Music"
+```
+
+The music comes from your own copy of the game, like the rest of the game data: never commit it
+or include it in a release. `Assets/StreamingAssets/MW2Music` is git-ignored, and
+`build_player.ps1` builds from tracked files only, so it never ends up in a Player build.

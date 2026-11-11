@@ -64,7 +64,7 @@ the original game.
 | Path | Contents |
 |---|---|
 | `Assets/MW2` | The engine: file format decoders, simulation, AI, HUD, shell (career, MechLab), network. |
-| `tools/` | `build_player.ps1` and [tools/README.md](tools/README.md): building a Windows Player and running it against a game folder |
+| `tools/` | `build_player.ps1`, `rip_cue_music.py` and [tools/README.md](tools/README.md): building a Windows Player, running it against a game folder, adding mission music from your own disc image |
 
 ## Requirements
 
