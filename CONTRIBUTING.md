@@ -18,11 +18,11 @@ issues are fine.
 
 ## Reporting a bug
 
-Please include:
+Use the **Bug report** form when you open an issue. Please include:
 
 - the mission (for example `BET1`) or shell screen, and the steps to reproduce;
 - what the original game does and what the port does instead;
-- your Windows version, whether you run the Editor or a built Player, and `Player.log` if there
+- Windows or macOS and its version, whether you run the Editor or a built Player, and `Player.log` if there
   is an error.
 
 ## Changing code

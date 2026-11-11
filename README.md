@@ -102,7 +102,7 @@ Controls**. Every cockpit action (movement, torso, jump jets, weapons, view) can
 keys, with Shift or Ctrl, and to mouse buttons; every command (lance orders, HUD, targeting,
 MASC, …) to any key with Shift, Ctrl or Alt. Click **+** and press a key to add a binding, click a
 binding to remove it. Your bindings are saved to `controls.json` in your user-data folder
-(`%USERPROFILE%\AppData\LocalLow\DefaultCompany\MW2Mercs`); the game's own map files are not
+(`%USERPROFILE%\AppData\LocalLow\OpenWarThink\MW2Mercs`); the game's own map files are not
 changed, and deleting the file restores the original controls. Commands can't use mouse buttons,
 cockpit actions can't use Alt, and the mouse axes are not remappable. This screen is an addition
 of the port: the original Cockpit Controls offered a fixed set of choices.

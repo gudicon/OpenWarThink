@@ -1,0 +1,15 @@
+name: Feature request
+description: An idea for the port, for example a convenience the original game did not have.
+labels: [enhancement]
+body:
+  - type: textarea
+    id: idea
+    attributes:
+      label: What would you like?
+    validations:
+      required: true
+  - type: textarea
+    id: why
+    attributes:
+      label: Why would it help?
+      description: The situation where you miss it.

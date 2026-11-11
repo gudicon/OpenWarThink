@@ -1,0 +1,66 @@
+name: Bug report
+description: Something in the port works differently from the original game, or does not work at all.
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for testing OpenWarThink! Please do not attach or paste original game files, saves or anything extracted from them.
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      description: The release you run (for example v0.2.0) or the commit if you build from source.
+      placeholder: v0.2.0
+    validations:
+      required: true
+  - type: dropdown
+    id: platform
+    attributes:
+      label: Platform
+      options:
+        - Windows
+        - macOS (Apple silicon)
+        - macOS (Intel)
+        - Unity Editor
+    validations:
+      required: true
+  - type: input
+    id: where
+    attributes:
+      label: Mission or screen
+      description: The mission (for example BET1, TRA2, a random contract) or the shell screen where it happens.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: What did you do?
+      description: The steps that lead to the problem, as exactly as you can.
+      placeholder: |
+        1. Start a new career
+        2. Accept the first contract
+        3. ...
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What did you expect, and what happened instead?
+      description: If you know how the original game behaves here, please describe it.
+    validations:
+      required: true
+  - type: textarea
+    id: log
+    attributes:
+      label: Player.log
+      description: |
+        Drag the file here or paste its end.
+        Windows: `%USERPROFILE%\AppData\LocalLow\OpenWarThink\MW2Mercs\Player.log`
+        macOS: `~/Library/Logs/OpenWarThink/MW2Mercs/Player.log`
+        (v0.2.0 and older: `DefaultCompany` instead of `OpenWarThink`.)
+  - type: textarea
+    id: extra
+    attributes:
+      label: Anything else
+      description: Screenshots, the mech and loadout, difficulty settings, remapped controls (controls.json)...
