@@ -503,6 +503,7 @@ namespace MW2
             }
             if (_leaveFrames-- > 0) return;
             _left = true;
+            Mw2Options.SaveConfig();    // FUN_1000fd09 0x1000fd09: mw2snd.cfg (SaveCfgSnd 0x10024f7d) as the sim ends
             if (MissionLeft != null) { MissionLeft(_fled); return; }
             Debug.Log("MW2: mission left (no campaign shell)");
 #if UNITY_EDITOR

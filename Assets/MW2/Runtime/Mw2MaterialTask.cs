@@ -17,6 +17,9 @@ namespace MW2
         public Color32[] MaterialColors;
         public int[] FaceStarts;
         public int[] FaceLengths;
+        /// <summary>Palette index of each mesh vertex for type 4 frames (POLY vertex value a), and the mission palette.</summary>
+        public int[] VertexIndices;
+        public Color32[] Palette;
 
         Mesh _mesh;
         Color32[] _colors;
@@ -57,8 +60,16 @@ namespace MW2
                 int frame = (phase + face) % Materials.Length;
                 ushort material = Materials[frame];
                 var id = PolyMeshBuilder.MaterialId(material);
+                bool perVertex = material >> 12 == 4 && VertexIndices != null && Palette != null;
                 for (int vertex = FaceStarts[face]; vertex < FaceStarts[face] + FaceLengths[face]; vertex++)
                 {
+                    if (perVertex && vertex < VertexIndices.Length)
+                    {
+                        int index = VertexIndices[vertex];
+                        _colors[vertex] = Palette[index];
+                        _materialIds[vertex] = new Vector2(index, material >> 8);
+                        continue;
+                    }
                     _colors[vertex] = MaterialColors[frame];
                     _materialIds[vertex] = id;
                 }

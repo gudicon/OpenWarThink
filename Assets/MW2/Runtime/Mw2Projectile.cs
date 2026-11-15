@@ -17,9 +17,10 @@ namespace MW2
     /// (scaled by 0.95 inside 3000 units) minus the unit velocity; within 100 units it bursts (Detonate: no damage).
     /// Missiles leave smoke (Mw2Effects.Smoke) and every hit starts the weapon's impact effect (Mw2Effects.Spawn).
     /// With Multiple Lights each shot carries a point light and a ground glow (see Spawn).
-    /// Approximations: model geometry/radius and per-object Unity update clocks remain adapters;
-    /// the smoothed homing of weapon flag 0x10 is
-    /// not ported.
+    /// Approximations: model geometry/radius and per-object Unity update clocks remain adapters.
+    /// Not ported: the smoothed homing of weapon flag 0x10 (slot +4 = weapon +8; 0x10011c4e: a += (target - a) * k with the
+    /// integer k = dt * 4 * 0xb5 converted to float). Only cTorpedo (type 32, flags 0x15) has the flag, no MEK in MW2.PRJ
+    /// carries it and the shell's stock drops it, so no shipped mission fires such a shot.
     /// </summary>
     public class Mw2Projectile : MonoBehaviour
     {

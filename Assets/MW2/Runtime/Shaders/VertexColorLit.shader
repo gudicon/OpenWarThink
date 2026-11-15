@@ -1,5 +1,7 @@
 // Flat vertex-colour lighting for imported MW2 POLY meshes (built-in render pipeline).
-// Material types 1 and 4 (TEXCOORD1 = low byte, high byte of the POLY material) pick their colour from a
+// Material type 4 (0x4000) has TEXCOORD1.x = the palette index of the vertex (POLY vertex value a): Plugin_DrawPolygon
+// 0x10053040 draws it unlit and unfogged with the colour of that index in the mission's first palette, interpolated over the face.
+// Material type 1 (TEXCOORD1 = low byte, high byte of the POLY material) picks its colour from a
 // 16-entry palette row like Material_Shade (mercsw.dll 0x1001afb0) and its lighting 0x1002f543:
 // shade = light * (low byte >> 1) / 0x440, clamped to 0..15, with the mission lights of Mw2Light.cginc; without them
 // (mech preview outside a mission) the level is approximated as 0x7F * (ambient + diffuse) of Unity's light.
@@ -11,6 +13,8 @@ Shader "MW2/VertexColorLit"
         _Ambient ("Ambient", Range(0, 1)) = 0.45
         [NoScaleOffset] _Palette ("Palette (256x1)", 2D) = "black" {}
         [Toggle] _UsePalette ("Use palette rows", Float) = 0
+        [NoScaleOffset] _LightTable ("Light table palette (256x1, PALG[0])", 2D) = "black" {}
+        [Toggle] _HasLightTable ("Has light table", Float) = 0
     }
     SubShader
     {
@@ -32,6 +36,8 @@ Shader "MW2/VertexColorLit"
             float _Ambient;
             float4 _LightColor0;
             float _UsePalette;
+            sampler2D _LightTable;
+            float _HasLightTable;
             float _ShadeFull;     // 1 on the cockpit shell: its lit rows are drawn at the brightest shade
 
             struct appdata { float4 vertex : POSITION; float3 normal : NORMAL; float4 color : COLOR; float2 material : TEXCOORD1; float2 enhanced : TEXCOORD4; };
@@ -45,6 +51,9 @@ Shader "MW2/VertexColorLit"
                 o.normal = UnityObjectToWorldNormal(v.normal);
                 o.worldPos = mul(unity_ObjectToWorld, v.vertex).xyz;
                 o.color = v.color;
+                // Type 4: colour of the vertex = light table at its index a (Plugin_DrawPolygon 0x10053040).
+                if (_HasLightTable > 0.5 && floor(floor(v.material.y + 0.5) / 16) == 4)
+                    o.color = float4(tex2Dlod(_LightTable, float4((floor(v.material.x + 0.5) + 0.5) / 256, 0.5, 0, 0)).rgb, 1);
                 o.material = v.material;
                 o.enhanced = v.enhanced;
                 return o;
@@ -66,7 +75,11 @@ Shader "MW2/VertexColorLit"
 
                 float high = floor(i.material.y + 0.5);
                 float type = floor(high / 16);
-                if (_UsePalette > 0.5 && (type == 1 || type == 4))
+                // Type 4: the table 0x102880c0 is filled once from the mission's first palette (Palette_FillLightTable
+                // 0x10004cc0), so it does not follow the live palette; the vertex colours are interpolated RGB.
+                // UV1.x is the vertex index a; Glide interpolates the RGB, so the table is read per vertex in vert().
+                if (_UsePalette > 0.5 && type == 4) return fixed4(i.color.rgb, 1);
+                if (_UsePalette > 0.5 && type == 1)
                 {
                     float shade;
                     if (_Mw2LightParams.w > 0.5) shade = Mw2PaletteShade(n, i.worldPos, floor(i.material.x + 0.5));

@@ -57,6 +57,66 @@ namespace MW2.Formats
             return (center, (float)Math.Sqrt(squared));
         }
 
+        /// <summary>
+        /// Poly_ReadObject 0x10073d2f: the distance threshold of a LOD step is the number after the first '_' of the
+        /// object name (atol), read only when the character after '_' is a digit; otherwise 0.
+        /// </summary>
+        public static float LodThreshold(string name)
+        {
+            int u = name.IndexOf('_');
+            if (u < 0 || u + 1 >= name.Length || !char.IsDigit(name[u + 1])) return 0f;
+            long value = 0;
+            for (int i = u + 1; i < name.Length && char.IsDigit(name[i]); i++)
+            {
+                value = value * 10 + (name[i] - '0');
+                if (value > int.MaxValue) { value = int.MaxValue; break; }   // atol saturates at LONG_MAX
+            }
+            return value;
+        }
+
+        /// <summary>
+        /// LOD chain of one POLY, as Poly_ReadObject 0x10073d2f builds it. Once an object with flag 0x1000 has been read
+        /// (the flag stays set for the rest of the POLY), every object starts a new step with its name threshold
+        /// (FUN_100035d1 0x100035d1); objects read before that are merged into the first step, whose threshold is 0.
+        /// FUN_100035d1 inserts each step after all steps with a threshold not above it, so the chain is a stable ascending
+        /// sort. Returns the steps as (threshold, object indices), or null when the POLY is a single model (no LOD flag)
+        /// or has an articulated object (0x2000 objects each make their own model and never read the LOD flag).
+        /// </summary>
+        public static List<(float threshold, List<int> objects)> LodChain(List<PolyObject> objects)
+        {
+            if (objects.Count < 2 || !objects.Exists(o => o.IsLodSet) || objects.Exists(o => o.Articulated)) return null;
+            var steps = new List<(float threshold, List<int> objects)>();
+            bool lod = false;
+            for (int k = 0; k < objects.Count; k++)
+            {
+                lod |= objects[k].IsLodSet;
+                float threshold = lod ? LodThreshold(objects[k].Name) : 0f;
+                if (k == 0) { steps.Add((threshold, new List<int> { 0 })); continue; }
+                if (!lod) { steps[0].objects.Add(k); continue; }
+                int at = 0;
+                while (at < steps.Count && steps[at].threshold <= threshold) at++;
+                steps.Insert(at, (threshold, new List<int> { k }));
+            }
+            return steps;
+        }
+
+        /// <summary>
+        /// Model_SelectLod 0x10055950: the step drawn at view depth <paramref name="depth"/> (model units) is the last one
+        /// whose threshold * camera[+0xb8] is not above the depth, or the first step when none is. A first step with
+        /// threshold 0 (_DAT_1008823c) is always drawn.
+        /// </summary>
+        public static int SelectLod(IReadOnlyList<float> thresholds, float depth, float focalScale)
+        {
+            if (thresholds.Count == 0 || thresholds[0] == 0f) return 0;
+            int selected = 0;
+            for (int i = 0; i < thresholds.Count; i++)
+            {
+                if (depth < focalScale * thresholds[i]) break;
+                selected = i;
+            }
+            return selected;
+        }
+
         public static List<PolyObject> Decode(byte[] d)
         {
             var objects = new List<PolyObject>();

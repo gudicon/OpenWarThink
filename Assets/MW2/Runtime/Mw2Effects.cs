@@ -533,8 +533,6 @@ namespace MW2
         /// <summary>Effects_Update 0x10012953 reads the live DAT_100aea44 +2 byte, including NetRoom changes.</summary>
         public static bool AreaDamageToUnits => Mw2Options.GameOptions.AreaDamageToUnits;
 
-        Mw2Destructible[] _buildings;
-        float[] _buildingRadius;
 
         /// <summary>
         /// 0x1001280e for an effect with +0x18 set, every update while it lasts. Reach r = the model radius (+0x40),
@@ -542,7 +540,11 @@ namespace MW2
         /// two types): within their radius (+0xe1c) + r of the point, dt * (+0x20) damage to every section through
         /// 0x10037b59 (head half, x2 when shut down) and dt * (+0x24) heat. Buildings (0x10012d1a, always): within their
         /// radius + r, dt * (+0x20) damage (0x10013010). Distances from GP+50..58 (the unit origin), not the foot-space controller.
-        /// Approximation: the building radius is that of its renderers. Detached parts use their current-LOD radius.
+        /// Effect_AreaDamageBuildings 0x10012d1a walks the GTs from the last, skips destroyed ones (+0 &amp; 4) and nodes without a
+        /// model (FUN_1005fc1d 0x1005fc1d gives 0), and measures from the model centre +0x34 to the point against the model
+        /// radius +0x40 (Model_GetBounds 0x10003c5e). +0x34 is the bounding-box centre +0x28 moved by the node matrix
+        /// (FUN_10004acc 0x10004acc), so it is the intact mesh's bounds centre in world space; +0x40 is GT +0x10.
+        /// Detached parts use their current-LOD radius.
         /// </summary>
         void AreaDamage(Slot s, int dt)
         {
@@ -559,24 +561,12 @@ namespace MW2
                     float radius = unit.TryGetComponent<Mw2MechController>(out var mc) ? mc.CollisionRadius : 5f;
                     if (Vector3.Distance(unit.Origin, at) < radius + reach) unit.AreaHit(damage, heat, s.Owner);
                 }
-            if (_buildings == null)
+            var buildings = Mw2Destructible.All;
+            for (int i = buildings.Count - 1; i >= 0; i--)
             {
-                _buildings = FindObjectsByType<Mw2Destructible>(FindObjectsSortMode.None);
-                _buildingRadius = new float[_buildings.Length];
-                for (int i = 0; i < _buildings.Length; i++)
-                {
-                    Bounds b = default;
-                    bool any = false;
-                    foreach (var r in _buildings[i].GetComponentsInChildren<Renderer>())
-                        if (any) b.Encapsulate(r.bounds); else { b = r.bounds; any = true; }
-                    _buildingRadius[i] = any ? b.extents.magnitude : 0f;
-                }
-            }
-            for (int i = 0; i < _buildings.Length; i++)
-            {
-                var bld = _buildings[i];
-                if (bld == null || bld.Destroyed) continue;
-                if (Vector3.Distance(bld.transform.position, at) < _buildingRadius[i] + reach) bld.ApplyDamage(damage, s.Owner);
+                var bld = buildings[i];
+                if (bld == null || bld.Destroyed || bld.BoundsFrame == null) continue;
+                if (Vector3.Distance(bld.BoundsFrame.TransformPoint(bld.BoundsCentre), at) < bld.Radius + reach) bld.ApplyDamage(damage, s.Owner);
             }
             // Effect_AreaDamageDebris 0x100155f6: every active detached part whose model centre lies inside
             // its bounds radius plus the effect radius loses dt * the effect's damage-per-tick.

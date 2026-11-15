@@ -19,6 +19,7 @@ namespace MW2.EditorTools
         public override void Created(GameObject go) => Undo.RegisterCreatedObjectUndo(go, "Load mission");
         public override void Select(GameObject go) => Selection.activeGameObject = go;
         public override void Destroy(GameObject go) => Undo.DestroyObjectImmediate(go);
-        public override Material PaletteMaterial(Color32[] palette, string path) => Mw2ImportWindow.PaletteMaterial(palette, path);
+        public override Material PaletteMaterial(Color32[] palette, string path, Color32[] lightTable = null) =>
+            Mw2ImportWindow.PaletteMaterial(palette, path, lightTable);
     }
 }

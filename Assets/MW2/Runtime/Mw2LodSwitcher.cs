@@ -27,6 +27,8 @@ namespace MW2
             // half the window width divided by tan(horizontal FOV / 2).
             float zoom = 1f / (Mathf.Tan(cam.fieldOfView * Mathf.Deg2Rad * 0.5f) * cam.aspect);
             float near0 = zoom * 1500f, near1 = zoom * 13000f, near2 = zoom * 21200f;
+            // Scenery LOD chains (Model_SelectLod 0x10055950) scale their thresholds by the same camera[+0xb8].
+            Mw2SceneLod.UpdateAll(cam, zoom);
 
             _units.Clear();
             int nearest = -1, second = -1, third = -1;

@@ -56,12 +56,18 @@ namespace MW2
             string dir = $"{OutRoot}/{mission.Prefix}";
             sink.BeginFolder(dir);
             var polyById = prj.Entries("POLY").ToDictionary(e => e.Id);
-            var flatMaterial = sink.PaletteMaterial(palette, $"{dir}/Flat.mat");
+            // The light table of type 4 faces comes from PALG[0], not from the period's palette (0x100712b8 puts PALG word 0
+            // in slot 0; LoadParticleCels -> FUN_10004d5d -> Palette_FillLightTable 0x10004cc0 runs after LoadWorld).
+            var lightEntry = mission.PaletteIds != null && mission.PaletteIds.Length > 0
+                ? prj.Entries("PAL").FirstOrDefault(e => e.Id == mission.PaletteIds[0]) : default;
+            var lightTable = lightEntry.Name != null ? Palette.Decode(prj.Read(lightEntry)) : palette;
+            var flatMaterial = sink.PaletteMaterial(palette, $"{dir}/Flat.mat", lightTable);
             var material = flatMaterial;
             var textures = new Mw2TextureBank(prj, mission, palette, dir, sink, flatMaterial.GetTexture("_Palette") as Texture2D);
             (PolyMeshBuilder.TextureInfo info, Material material)? TextureFor(int key) => textures.Get(key);
 
             var meshCache = new Dictionary<int, List<(Mesh mesh, Material[] materials)>>();
+            var lodChains = new Dictionary<int, List<(float threshold, List<int> objects)>>();
             List<(Mesh mesh, Material[] materials)> MeshesFor(int polyId)
             {
                 if (meshCache.TryGetValue(polyId, out var list)) return list;
@@ -69,6 +75,8 @@ namespace MW2
                 if (polyById.TryGetValue(polyId, out var entry))
                 {
                     var objects = PolyModel.Decode(prj.Read(entry));
+                    var chain = PolyModel.LodChain(objects);
+                    if (chain != null) lodChains[polyId] = chain;
                     for (int k = 0; k < objects.Count; k++)
                     {
                         var keys = new List<int>();
@@ -115,7 +123,7 @@ namespace MW2
                 var area = new GameObject(file);
                 area.transform.SetParent(root.transform, false);
                 var areaNodes = new Dictionary<int, Transform>();
-                var (p, s) = PlaceNodes(nodes, area.transform, polyById, MeshesFor, areaNodes);
+                var (p, s) = PlaceNodes(nodes, area.transform, polyById, MeshesFor, lodChains, areaNodes);
                 placed += p;
                 skipped += s;
                 // TSK class 4: looping sounds at area nodes (fires, windmills, taxiing jets, crowds; 0x1000e68f).
@@ -184,6 +192,9 @@ namespace MW2
                         var centre = intactMesh.sharedMesh.bounds.center;
                         foreach (var v in intactMesh.sharedMesh.vertices)
                             destructible.Radius = Mathf.Max(destructible.Radius, (v - centre).magnitude);
+                        // Model +0x28 (the same bounds); FUN_10004acc 0x10004acc moves it by the node matrix into +0x34.
+                        destructible.BoundsCentre = centre;
+                        destructible.BoundsFrame = intactMesh.transform;
                     }
                     // GT +2: the replacement object (FUN_1005f27b 0x1005f27b hides it with 0x800 at load; FUN_1005f301
                     // 0x1005f301 shows it on destruction with the intact object's matrix), e.g. the BET2 armored car's
@@ -204,7 +215,7 @@ namespace MW2
             {
                 var sky = new GameObject(file);
                 sky.transform.SetParent(root.transform, false);
-                PlaceNodes(nodes, sky.transform, polyById, MeshesFor);
+                PlaceNodes(nodes, sky.transform, polyById, MeshesFor, lodChains);
                 skyObjects.Add(sky);
             }
 
@@ -440,18 +451,19 @@ namespace MW2
             }
 
             // Projectile objects get flag 0x400 (0x10070e92: 0x1005acfd(object, 0x400)); with it Material_Shade
-            // (0x1001afb0) returns lit types 1 / 4 unlit, at the row's brightest shade (the baked vertex colour).
+            // (0x1001afb0) returns lit type 1 unlit, at the row's brightest shade (the baked vertex colour). Type 4 is
+            // unlit per-vertex colour either way (Plugin_DrawPolygon 0x10053040) and stays as built.
             Mesh Unlit(Mesh mesh)
             {
                 var ids = new List<Vector2>();
                 mesh.GetUVs(1, ids);
-                if (!ids.Any(id => (int)id.y >> 4 == 1 || (int)id.y >> 4 == 4)) return mesh;
+                if (!ids.Any(id => (int)id.y >> 4 == 1)) return mesh;
                 var copy = Object.Instantiate(mesh);
                 copy.name = mesh.name + "_0x400";
                 for (int i = 0; i < ids.Count; i++)
                 {
                     int high = (int)ids[i].y;
-                    if (high >> 4 == 1 || high >> 4 == 4) ids[i] = new Vector2(ids[i].x, high & 0x0F);
+                    if (high >> 4 == 1) ids[i] = new Vector2(ids[i].x, high & 0x0F);
                 }
                 copy.SetUVs(1, ids);
                 sink.Save(copy, $"{dir}/{copy.name}.asset");
@@ -670,6 +682,9 @@ namespace MW2
                     task.PeriodTicks = period;
                     task.Materials = materials;
                     task.MaterialColors = materials.Select(m => palette[PolyMeshBuilder.FlatColorIndex(m)]).ToArray();
+                    // A type 4 frame colours each vertex by its POLY value a (Plugin_DrawPolygon 0x10053040).
+                    task.VertexIndices = obj.Polygons.SelectMany(pg => pg.indices).Select(i => PolyMeshBuilder.VertexColorIndex(obj, i)).ToArray();
+                    task.Palette = palette;
                     task.FaceStarts = starts;
                     task.FaceLengths = lengths;
                 }
@@ -678,7 +693,7 @@ namespace MW2
 
         static (int placed, int skipped) PlaceNodes(List<BwdNode> nodes, Transform parent,
             Dictionary<int, PrjArchive.Entry> polyById, System.Func<int, List<(Mesh mesh, Material[] materials)>> meshesFor,
-            Dictionary<int, Transform> transforms = null)
+            Dictionary<int, List<(float threshold, List<int> objects)>> lodChains, Dictionary<int, Transform> transforms = null)
         {
             transforms ??= new Dictionary<int, Transform>();
             int placed = 0, skipped = 0;
@@ -696,6 +711,7 @@ namespace MW2
                 bool rubble = name.StartsWith("SCH");
                 if (rubble) skipped++;
                 var meshes = meshesFor(n.PolyId);
+                var renderers = new Renderer[meshes.Count];
                 for (int k = 0; k < meshes.Count; k++)
                 {
                     var target = go;
@@ -710,7 +726,10 @@ namespace MW2
                     renderer.enabled = !rubble;
                     var imageNode = target.AddComponent<Mw2ImageNode>();
                     imageNode.Flags = (int)(n.Flags & 0xffff); imageNode.Apply();
+                    renderers[k] = renderer;
                 }
+                // POLY objects of a LOD set (flag 0x1000) are steps of one chain; Model_SelectLod 0x10055950 draws one.
+                if (lodChains.TryGetValue(n.PolyId, out var chain)) AddSceneLod(go, renderers, meshes, chain);
                 if (!rubble) placed++;
             }
             foreach (var n in nodes)
@@ -722,6 +741,31 @@ namespace MW2
             }
             foreach (var n in nodes) AddCollider(transforms[n.Node], n.CollisionType);
             return (placed, skipped);
+        }
+
+        /// <summary>Mw2SceneLod for a node whose POLY is a LOD chain; the centre comes from the head step (Model_ComputeBounds
+        /// 0x10003efa reads chain +0x1c).</summary>
+        static void AddSceneLod(GameObject node, Renderer[] renderers, List<(Mesh mesh, Material[] materials)> meshes,
+            List<(float threshold, List<int> objects)> chain)
+        {
+            var steps = new int[renderers.Length];
+            for (int s = 0; s < chain.Count; s++)
+                foreach (int k in chain[s].objects) steps[k] = s;
+            Bounds? head = null;
+            foreach (int k in chain[0].objects)
+            {
+                // Every mesh of the node sits at its origin (the step children have an identity local transform).
+                var b = meshes[k].mesh.bounds;
+                if (meshes[k].mesh.vertexCount == 0) continue;
+                if (head == null) head = b;
+                else { var h = head.Value; h.Encapsulate(b); head = h; }
+            }
+            var lod = node.AddComponent<Mw2SceneLod>();
+            lod.Renderers = renderers;
+            lod.RendererSteps = steps;
+            lod.Thresholds = chain.Select(c => c.threshold).ToArray();
+            lod.LocalCentre = head?.center ?? Vector3.zero;
+            lod.Show(0);
         }
 
         /// <summary>
@@ -993,7 +1037,7 @@ namespace MW2
             if ((key & PolyMeshBuilder.SpriteFlag) != 0) return _byKey[key] = Sprite(key & 0xFFFF);
             (PolyMeshBuilder.TextureInfo info, Material material)? result = null;
             if (_mission.TextureKeys.TryGetValue(key, out var frames) && frames.Count > 0 &&
-                _celById.TryGetValue(frames[0], out var entry))
+                _celById.TryGetValue(frames[0], out var entry) && LookupSize(entry))
             {
                 var loaded = Load(entry);
                 result = loaded;
@@ -1018,6 +1062,17 @@ namespace MW2
             }
             _byKey[key] = result;
             return result;
+        }
+
+        /// <summary>
+        /// Texture_Lookup 0x1000219e also gives -1 for a CEL whose width or height is not a power of two
+        /// (FUN_10001058 0x10001058) or is over 0x80; the key then has no texture.
+        /// </summary>
+        bool LookupSize(PrjArchive.Entry entry)
+        {
+            static bool Pow2(int v) => v > 0 && (v & (v - 1)) == 0 && v <= 0x80;
+            var info = Load(entry).info;
+            return Pow2(info.Width) && Pow2(info.Height);
         }
 
         /// <summary>Material of a type 3 sprite (MW2/Sprite) with the key's texture; animated with the key.</summary>

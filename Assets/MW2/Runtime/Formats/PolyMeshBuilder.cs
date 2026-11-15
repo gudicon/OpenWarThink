@@ -84,12 +84,20 @@ namespace MW2.Formats
             tris.AddRange(new[] { start, start + 1, start + 2, start, start + 2, start + 3 });
         }
 
-        /// <summary>Material types 1 and 4 are lit through a 16-colour palette row (mercsw.dll 0x1001afb0).</summary>
-        public static bool IsLitRamp(ushort material)
-        {
-            int type = material >> 12;
-            return type == 1 || type == 4;
-        }
+        /// <summary>Material type 1 is lit through a 16-colour palette row (mercsw.dll 0x1001afb0); type 4 is coloured per
+        /// vertex (<see cref="VertexColorIndex"/>).</summary>
+        public static bool IsLitRamp(ushort material) => material >> 12 == 1;
+
+        /// <summary>
+        /// Type 4 (0x4000) faces: Plugin_DrawPolygon 0x10053040 (loop 0x100534b9) colours every vertex with the RGB of
+        /// Palette_FillLightTable 0x10004cc0 (the mission's first palette, 0x102880c0) at index ftol(device vertex +0x1c).
+        /// That field is the POLY vertex value a: Poly_AddVertex stores it at model vertex +0x18, FUN_10056620 0x10056620
+        /// copies it to the clip vertex +0x14 and FUN_10056455 0x10056455 to the device vertex +0x1c. Lighting
+        /// (Light_VertexColors 0x1002ec0a) does not touch it, and the fog value of the vertex is 0xff (no fog). Glide
+        /// interpolates the colours over the face (mode 0xf: per-vertex colour, opaque). Values outside 0..255 (12 of 79740
+        /// vertices in the PRJ) would read outside the table in the original; here they are clamped.
+        /// </summary>
+        public static int VertexColorIndex(PolyObject obj, int vertex) => Math.Max(0, Math.Min(255, (int)obj.VertexA[vertex]));
 
         /// <summary>
         /// Palette index of a flat polygon, as Material_Shade (mercsw.dll 0x1001afb0) produces it:
@@ -109,7 +117,7 @@ namespace MW2.Formats
 
         /// <summary>
         /// The raw material the shader gets in UV1: (low byte, high byte). Palette-row polygons (types 1 and 4) keep the low
-        /// byte, the reflectivity; every other flat polygon gets its palette index there (FlatColorIndex, the paint of
+        /// byte, the reflectivity (Build replaces it for type 4 faces by the vertex colour index); every other flat polygon gets its palette index there (FlatColorIndex, the paint of
         /// <paramref name="camo"/> applied), so the shader can read the live palette of Mw2PaletteFade.
         /// </summary>
         public static Vector2 MaterialId(ushort material, byte[] camo = null)
@@ -241,9 +249,14 @@ namespace MW2.Formats
 
                 int key = TextureKey(material);
                 TextureInfo? tex = key >= 0 && textureFor != null ? textureFor(key) : null;
+                // DrawTexturedPolygon 0x10001081 returns without drawing when Texture_Lookup 0x1000219e gives -1 (the key
+                // has no texture in this mission): such a face is left out, e.g. the TL1SKYDM panel of key 0x17c that most
+                // missions never bind. Without a texture source (previews) the face keeps its flat palette colour.
+                if (key >= 0 && textureFor != null && tex == null) continue;
                 if (tex == null) key = -1;
 
                 Color32 color = tex == null ? palette[FlatColorIndex(material, camo)] : white;
+                bool perVertex = tex == null && material >> 12 == 4;
 
                 float minV = float.MaxValue;
                 foreach (int i in idx) minV = Math.Min(minV, obj.VertexB[i]);
@@ -255,8 +268,17 @@ namespace MW2.Formats
                     spriteCorners.Add(Vector2.zero);
                     verts.Add(ToUnity(obj.Vertices[i]));
                     normals.Add(tex != null && vertexNormals[i].sqrMagnitude > 0 ? vertexNormals[i] : faceNormals[p]);
-                    colors.Add(color);
-                    materialIds.Add(MaterialId(material, camo));
+                    if (perVertex)
+                    {
+                        int index = VertexColorIndex(obj, i);
+                        colors.Add(palette[index]);
+                        materialIds.Add(new Vector2(index, material >> 8));
+                    }
+                    else
+                    {
+                        colors.Add(color);
+                        materialIds.Add(MaterialId(material, camo));
+                    }
                     enhancement.Add(new Vector2(material, imageFlags));
                     sourceVertices.Add(ToUnity(obj.Vertices[i]));
                     if (tex is TextureInfo t)

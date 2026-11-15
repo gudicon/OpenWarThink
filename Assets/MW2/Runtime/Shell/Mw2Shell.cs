@@ -774,6 +774,9 @@ namespace MW2.Shell
                 cam.backgroundColor = Color.black;
             }
             enabled = true;
+            // mercswin restarts the shell, whose ShellMain reads mw2snd.cfg / mw2dif.cfg again (FUN_1002782a, FUN_10027871):
+            // the volumes the mission saved (FUN_1000fd09) reach Combat Variables and are not overwritten by an old copy.
+            CombatVariablesScreen.Load(this);
             SalvageFile = salvage;
             SalvageOpened = false;
             uint next = Career.ReturnFromMission(name =>

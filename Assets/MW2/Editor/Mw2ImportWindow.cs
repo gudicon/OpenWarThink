@@ -81,7 +81,7 @@ namespace MW2.EditorTools
         /// Flat-colour material with the palette stored inside it, so material types 1 and 4 can pick their
         /// lit palette row (mercsw.dll 0x1001afb0).
         /// </summary>
-        internal static Material PaletteMaterial(Color32[] palette, string path)
+        internal static Material PaletteMaterial(Color32[] palette, string path, Color32[] lightTable = null)
         {
             AssetDatabase.DeleteAsset(path);
             var material = new Material(Shader.Find("MW2/VertexColorLit"))
@@ -92,6 +92,11 @@ namespace MW2.EditorTools
             var texture = Palette.ToTexture(palette, material.name + "_Palette");
             AssetDatabase.AddObjectToAsset(texture, material);
             material.SetTexture("_Palette", texture);
+            // Type 4 faces read the light table 0x102880c0, filled once from PALG[0] (Palette_FillLightTable 0x10004cc0).
+            var table = Palette.ToTexture(lightTable ?? palette, material.name + "_LightTable");
+            AssetDatabase.AddObjectToAsset(table, material);
+            material.SetTexture("_LightTable", table);
+            material.SetFloat("_HasLightTable", 1);
             EditorUtility.SetDirty(material);
             AssetDatabase.SaveAssets();
             return material;

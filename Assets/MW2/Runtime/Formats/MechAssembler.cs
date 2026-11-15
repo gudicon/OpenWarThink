@@ -34,8 +34,9 @@ namespace MW2.Formats
                 if (builtMeshes.TryGetValue((entry.Id, item), out var built)) { materials = built.materials; return built.mesh; }
                 var keys = new List<int>();
                 // Use the archive's material indices; mission paint is applied only when supplied by STAR.
+                // Without a texture bank (no mission) textured faces keep their flat colour instead of being left out.
                 var mesh = PolyMeshBuilder.Build(obj, palette, null,
-                    key => textureFor?.Invoke(key)?.info, keys, paint, imageFlags: 0x100);
+                    textureFor == null ? null : key => textureFor(key)?.info, keys, paint, imageFlags: 0x100);
                 materials = keys.Count == 0 ? new[] { material } :
                     keys.Select(key => key < 0 ? material : textureFor?.Invoke(key)?.material ?? material).ToArray();
                 meshSink?.Invoke($"{entry.Name}_{entry.Id}_{item}", mesh);

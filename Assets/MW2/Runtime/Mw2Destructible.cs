@@ -29,6 +29,10 @@ namespace MW2
         public int Index;
         [Tooltip("GT +0x10: radius of the intact model (+0x40, AfterWorldLoader 0x100739f9), metres.")]
         public float Radius;
+        [Tooltip("Model +0x28: the intact model's bounding-box centre in the space of BoundsFrame (Model_ComputeBounds 0x10003efa).")]
+        public Vector3 BoundsCentre;
+        [Tooltip("The transform of the intact model's mesh; null when the node shows no model (FUN_1005fc1d gives 0).")]
+        public Transform BoundsFrame;
         public float Strength = 25;
         public bool Destroyed;
         [Tooltip("GT +2: the replacement object, hidden until destruction (FUN_1005f27b 0x1005f27b).")]

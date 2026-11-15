@@ -45,6 +45,32 @@ namespace MW2.Formats
             return c;
         }
 
+        /// <summary>The 0x54 bytes SaveCfgSnd 0x10024f7d writes.</summary>
+        public byte[] ToBytes()
+        {
+            var data = new byte[Words * 4];
+            for (int i = 0; i < Words; i++) BitConverter.GetBytes(Word[i]).CopyTo(data, i * 4);
+            return data;
+        }
+
+        /// <summary>
+        /// SaveCfgSnd 0x10024f7d (_open with 0x8101: write, create, truncate, binary; then 0x54 bytes of DAT_100a6308),
+        /// called by FUN_1000fd09 when the sim ends. The port writes into the given folder (the user-data folder), never
+        /// into the game folder. False when the file cannot be written (the original returns -1).
+        /// </summary>
+        public bool Save(string folder)
+        {
+            if (string.IsNullOrEmpty(folder)) return false;
+            try
+            {
+                Directory.CreateDirectory(folder);
+                File.WriteAllBytes(Path.Combine(folder, "mw2snd.cfg"), ToBytes());
+                return true;
+            }
+            catch (IOException) { return false; }
+            catch (UnauthorizedAccessException) { return false; }
+        }
+
         /// <summary>mw2snd.cfg from the game folder, or the defaults when it is missing or short.</summary>
         public static SoundConfig Load(string gameFolder)
         {

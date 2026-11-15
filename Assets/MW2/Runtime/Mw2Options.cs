@@ -11,9 +11,10 @@ namespace MW2
     /// 0x1004ea6c / 0x1004ea81 particles DAT_1009db88, 0x1004eaa4 / 0x1004eab9 multiple lights DAT_10097cb8,
     /// 0x1004eadc / 0x1004eaf1 shadows DAT_1009f71c); the setters also write config words 9..12. At mission start the page's
     /// set-up function (0x1004e9a1, from FirstMenu 0x1003c56a) applies those config words.
-    /// Approximations: mw2snd.cfg is not written back (FUN_1000fd09 saves it when the sim ends; the port leaves the game
-    /// folder untouched), so changes last for the session. Explosion chunks gate the models of GT pieces with flag 0x8000
-    /// (Scene_LoadObjectModel 0x1005f729), which the port does not load; shadows gate FUN_1005d44e (0x1005d52c), which is
+    /// When the sim ends FUN_1000fd09 writes the config back (SaveCfgSnd 0x10024f7d, SaveConfig); the port writes it into
+    /// the user-data folder, which is read before the game folder, and leaves the game folder untouched.
+    /// Approximations: explosion chunks gate the models of GT pieces with flag 0x8000 (Scene_LoadObjectModel 0x1005f729),
+    /// which the port does not load; shadows gate FUN_1005d44e (0x1005d52c), which is
     /// not ported; both are kept as values only.
     /// </summary>
     public static class Mw2Options
@@ -52,6 +53,8 @@ namespace MW2
             string folder = Mw2Input.GameFolder;
             if (string.IsNullOrEmpty(folder)) return;
             _loaded = true;
+            // The shell sets the user-data folder; a mission started without it reads and writes the same copy.
+            if (string.IsNullOrEmpty(SoundConfig.UserFolder)) SoundConfig.UserFolder = UnityEngine.Application.persistentDataPath;
             _config = SoundConfig.Load(folder);
             _betty = _config.Betty;
             _effects = _config.Effects;
@@ -69,6 +72,19 @@ namespace MW2
 
         /// <summary>A new game folder (a newly loaded mission) reads mw2snd.cfg again.</summary>
         public static void Reset() => _loaded = false;
+
+        /// <summary>
+        /// FUN_1000fd09 0x1000fd09 at the end of the sim: SaveCfgSnd 0x10024f7d writes DAT_100a6308, the config as the
+        /// sliders' Accept and the combat variables left it (a slider moved and then cancelled is not saved). The next
+        /// mission and the restarted shell read it again, so the cached copy is dropped.
+        /// </summary>
+        public static void SaveConfig()
+        {
+            if (!_loaded || _config == null) return;
+            if (!_config.Save(SoundConfig.UserFolder))
+                UnityEngine.Debug.LogWarning("MW2: mw2snd.cfg could not be written to " + SoundConfig.UserFolder);
+            _loaded = false;
+        }
 
         static Mw2Audio Audio => Mw2Audio.Instance;
 
