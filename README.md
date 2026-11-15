@@ -76,7 +76,9 @@ the original game.
 
 **To play**, download a build for Windows or macOS from
 [Releases](https://github.com/gudicon/OpenWarThink/releases) and point it at your *Mercenaries*
-folder; the release notes explain each step.
+folder, or at the *Mercenaries* Titanium CD (for example `E:\`): the game files are then copied
+from the disc once, without running the original setup. Optionally give it the `.cue` file of a
+CD image with the mission music. The release notes explain each step.
 
 **To work on the code:**
 

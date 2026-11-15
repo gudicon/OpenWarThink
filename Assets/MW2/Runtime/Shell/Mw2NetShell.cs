@@ -59,7 +59,8 @@ namespace MW2.Shell
             DontDestroyOnLoad(go);
             var shell = go.AddComponent<Mw2NetShell>();
             int folder = Array.IndexOf(args, "--game-folder");
-            if (folder >= 0 && folder + 1 < args.Length) shell.GameFolder = args[folder + 1];
+            // A Titanium disc given here means the copy the shell made of it (Mw2DiscInstall).
+            if (folder >= 0 && folder + 1 < args.Length) shell.GameFolder = Mw2DiscInstall.Resolve(args[folder + 1]);
             if (args.Contains("--mw2-net-test")) go.AddComponent<Mw2NetSelfTest>();
             return true;
         }

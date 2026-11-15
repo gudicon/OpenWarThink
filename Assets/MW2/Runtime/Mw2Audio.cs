@@ -158,11 +158,24 @@ namespace MW2
         /// <summary>
         /// CD audio: 0x1000f9a7 at mission start, 0x10052b83 plays one track over MCI. The TE release replaces the disc
         /// with cdt.dll, which plays "game\CD\NN.ogg" for track NN; a track outside the disc (0x10052f6e) stays silent.
+        /// Without that folder the port reads track NN from the player's CD image (Mw2MusicDisc), then from
+        /// StreamingAssets/MW2Music.
         /// </summary>
         IEnumerator LoadTrack(int track)
         {
             string dir = Path.GetDirectoryName(PrjPath) ?? "";
             string file = Path.Combine(dir, "CD", track.ToString("00") + ".ogg");
+            if (!File.Exists(file))
+            {
+                // The player's own CD image (Mw2MusicDisc): the track is streamed from the BIN as it plays.
+                var disc = Mw2MusicDisc.Track(track);
+                if (disc != null)
+                {
+                    var clip = Mw2MusicDisc.Clip(disc, out _musicReader);
+                    StartMusic(clip);
+                    yield break;
+                }
+            }
             // Standalone ports can bundle the disc audio without modifying the original installation.
             if (!File.Exists(file))
                 file = Path.Combine(Application.dataPath, "StreamingAssets", "MW2Music", track.ToString("00") + ".ogg");
@@ -182,13 +195,20 @@ namespace MW2
                 }
                 var clip = DownloadHandlerAudioClip.GetContent(request);
                 clip.name = $"CD track {track}";
-                _music = gameObject.AddComponent<AudioSource>();
-                _music.clip = clip;
-                _music.spatialBlend = 0f;
-                _music.volume = MusicGain;
-                _music.Play();
-                if (_musicPaused) _music.Pause();
+                StartMusic(clip);
             }
+        }
+
+        IDisposable _musicReader;
+
+        void StartMusic(AudioClip clip)
+        {
+            _music = gameObject.AddComponent<AudioSource>();
+            _music.clip = clip;
+            _music.spatialBlend = 0f;
+            _music.volume = MusicGain;
+            _music.Play();
+            if (_musicPaused) _music.Pause();
         }
 
         /// <summary>
@@ -210,6 +230,8 @@ namespace MW2
         {
             _powerHum?.Dispose();
             _midiOutput?.Dispose();
+            if (_music != null) _music.Stop();
+            _musicReader?.Dispose();
             if (Instance == this) Instance = null;
             _archive?.Dispose();
             foreach (var clip in _clips.Values) if (clip != null) Destroy(clip);

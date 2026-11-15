@@ -36,6 +36,13 @@ Leave the other game files (input maps, settings, MEKs, CD) where they are. The 
 them from there and keeps saves, user MEKs and settings in Unity's per-user
 `persistentDataPath`.
 
+Instead of an installed folder you can give the root of the *Mercenaries* Titanium CD (volume
+`TITAN_MERCS`, a real drive or a mounted image), for example `--game-folder E:/`. The Titanium
+disc keeps the installed files uncompressed (`Install/16bit`, `Install/data`, `Smk`, `KEATING`,
+`LAUNCH`), so the Player copies them once, about 160 MB, to `Mercenaries` in its user-data folder
+(`%USERPROFILE%\AppData\LocalLow\OpenWarThink\MW2Mercs`) and uses that copy from then on; the disc
+is no longer needed. The original setup program is not run and the disc is only read.
+
 If the folder cannot be opened, the Player shows a path field and an **Open game folder**
 button. A successful choice is remembered in the user's settings. `--game-folder` sets the
 path for the current run only and takes priority over the saved choice; without it the
@@ -51,15 +58,19 @@ Self-test of a built Player:
 
 ## Mission music
 
-Mission music is played from `NN.ogg` files (`02.ogg`, `03.ogg`, …), one per audio track of the
-game disc. OpenWarThink looks for them in two places, in this order:
+Mission music is the audio tracks of the game disc (`02`, `03`, …). OpenWarThink looks for them
+in this order:
 
 1. `<game folder>\CD\NN.ogg`, the layout of installations that already have the music as files;
-2. `MW2Mercs_Data\StreamingAssets\MW2Music\NN.ogg` next to `MW2Mercs.exe` (in the Unity Editor:
-   `Assets\StreamingAssets\MW2Music`), so you can add music without changing your game folder.
+2. a BIN/CUE image of your own *Mercenaries* disc with the music as audio tracks: give its `.cue`
+   file in the optional music field of the first screen (remembered) or with
+   `--music-disc "<path to Mercenaries.cue>"` (this run only). The tracks are streamed straight from
+   the BIN; nothing is converted or copied. A mounted image usually shows only its data track, so
+   point at the `.cue` file, not at the drive;
+3. `MW2Mercs_Data\StreamingAssets\MW2Music\NN.ogg` next to `MW2Mercs.exe` (in the Unity Editor:
+   `Assets\StreamingAssets\MW2Music`).
 
-If your installation has no `CD` folder, cut the music from a BIN/CUE image of your own
-*Mercenaries* disc (the Titanium image keeps the music only in the BIN, as audio tracks):
+To have the music as `.ogg` files instead, cut it from the image:
 
 ```powershell
 pip install numpy soundfile

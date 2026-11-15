@@ -104,7 +104,44 @@ namespace MW2.Shell
                 }
                 GameFolder = args[at + 1];
             }
+            _musicField = PlayerPrefs.GetString(Mw2MusicDisc.PreferenceKey, "");
+            if (DiscCopy.IsDisc(GameFolder))
+            {
+                if (DiscCopy.IsInstalled(Mw2DiscInstall.DefaultTarget)) GameFolder = Mw2DiscInstall.DefaultTarget;
+                else
+                {
+                    _folderError = "Copying the game from the disc...";
+                    StartDiscCopy(GameFolder, Application.isBatchMode, false);
+                    return;
+                }
+            }
             OpenGameFolder();
+        }
+
+        DiscCopy _install;
+        bool _saveAfterCopy;
+        string _musicField = "";
+
+        /// <summary>Installation adapter: copy the Titanium disc into the user data folder, then open that folder.</summary>
+        /// Like --game-folder, a copy started from the command line does not change the saved folder.
+        void StartDiscCopy(string disc, bool wait, bool save)
+        {
+            _saveAfterCopy = save;
+            _install = new DiscCopy(disc, Mw2DiscInstall.DefaultTarget);
+            if (!wait) { _install.Start(); return; }
+            _install.RunNow();
+            FinishDiscCopy();
+        }
+
+        void FinishDiscCopy()
+        {
+            var install = _install;
+            _install = null;
+            if (install.Error != null) { FolderFailure("Copying from the disc failed: " + install.Error); return; }
+            GameFolder = install.Target;
+            Debug.Log("MW2: game copied from the disc to " + GameFolder);
+            OpenGameFolder();
+            if (_folderError == null && _saveAfterCopy) { PlayerPrefs.SetString("MW2.GameFolder", GameFolder); PlayerPrefs.Save(); }
         }
 
         string _folderError;
@@ -1121,17 +1158,50 @@ namespace MW2.Shell
 
         void OnGUI()
         {
+            if (_install != null && _install.Finished) FinishDiscCopy();
             if (_folderError != null)
             {
                 float width = Mathf.Min(600, Screen.width - 20);
                 GUILayout.BeginArea(new Rect((Screen.width - width) / 2, 40, width, Screen.height - 60), GUI.skin.box);
                 GUILayout.Label("MechWarrior 2: Mercenaries game folder");
+                if (_install != null)
+                {
+                    GUILayout.Label($"Copying the game from the disc... {_install.Progress * 100f:0}%");
+                    GUILayout.Label("To " + _install.Target);
+                    GUILayout.EndArea();
+                    return;
+                }
                 GUILayout.Label(_folderError);
+                GUILayout.Label("Your Mercenaries folder, or the Titanium CD drive (for example E:\\) to copy the game from it:");
                 GameFolder = GUILayout.TextField(GameFolder);
+                GUILayout.Space(8);
+                GUILayout.Label("Optional: the CD image with the mission music (.cue file):");
+                _musicField = GUILayout.TextField(_musicField);
                 if (GUILayout.Button("Open game folder"))
                 {
-                    OpenGameFolder();
-                    if (_folderError == null) { PlayerPrefs.SetString("MW2.GameFolder", GameFolder); PlayerPrefs.Save(); }
+                    string music = _musicField.Trim().Trim('"');
+                    string musicError = music.Length == 0 ? null : Mw2MusicDisc.Check(music);
+                    if (musicError != null) _folderError = "Music: " + musicError;
+                    else
+                    {
+                        Mw2MusicDisc.Save(music);
+                        GameFolder = GameFolder.Trim().Trim('"');
+                        if (DiscCopy.IsDisc(GameFolder))
+                        {
+                            if (DiscCopy.IsInstalled(Mw2DiscInstall.DefaultTarget))
+                            {
+                                GameFolder = Mw2DiscInstall.DefaultTarget;
+                                OpenGameFolder();
+                                if (_folderError == null) { PlayerPrefs.SetString("MW2.GameFolder", GameFolder); PlayerPrefs.Save(); }
+                            }
+                            else StartDiscCopy(GameFolder, false, true);
+                        }
+                        else
+                        {
+                            OpenGameFolder();
+                            if (_folderError == null) { PlayerPrefs.SetString("MW2.GameFolder", GameFolder); PlayerPrefs.Save(); }
+                        }
+                    }
                 }
                 if (GUILayout.Button("Quit")) Application.Quit();
                 GUILayout.EndArea();
