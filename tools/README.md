@@ -40,8 +40,9 @@ Instead of an installed folder you can give the root of the *Mercenaries* Titani
 `TITAN_MERCS`, a real drive or a mounted image), for example `--game-folder E:/`. The Titanium
 disc keeps the installed files uncompressed (`Install/16bit`, `Install/data`, `Smk`, `KEATING`,
 `LAUNCH`), so the Player copies them once, about 160 MB, to `Mercenaries` in its user-data folder
-(`%USERPROFILE%\AppData\LocalLow\OpenWarThink\MW2Mercs`) and uses that copy from then on; the disc
-is no longer needed. The original setup program is not run and the disc is only read.
+(`%USERPROFILE%\AppData\LocalLow\OpenWarThink\MW2Mercs` on Windows,
+`~/Library/Application Support/OpenWarThink/MW2Mercs` on macOS) and uses that copy from then on; the
+disc is no longer needed. The original setup program is not run and the disc is only read.
 
 If the folder cannot be opened, the Player shows the **Game Files** screen: a game folder field and
 an optional music field, each with **BROWSE**, which lists the drives (with their volume labels),
@@ -67,8 +68,9 @@ in this order:
 2. a BIN/CUE image of your own *Mercenaries* disc with the music as audio tracks: give its `.cue`
    file in the optional music field of the first screen (remembered) or with
    `--music-disc "<path to Mercenaries.cue>"` (this run only). The tracks are streamed straight from
-   the BIN; nothing is converted or copied. A mounted image usually shows only its data track, so
-   point at the `.cue` file, not at the drive;
+   the BIN; nothing is converted or copied, and only the path to the `.cue` is remembered, so keep
+   the image (the `.cue` and its `.bin`) where it is. If you move it, choose the `.cue` again. A
+   mounted image usually shows only its data track, so point at the `.cue` file, not at the drive;
 3. `MW2Mercs_Data\StreamingAssets\MW2Music\NN.ogg` next to `MW2Mercs.exe` (in the Unity Editor:
    `Assets\StreamingAssets\MW2Music`).
 
