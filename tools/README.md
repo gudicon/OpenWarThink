@@ -43,8 +43,10 @@ disc keeps the installed files uncompressed (`Install/16bit`, `Install/data`, `S
 (`%USERPROFILE%\AppData\LocalLow\OpenWarThink\MW2Mercs`) and uses that copy from then on; the disc
 is no longer needed. The original setup program is not run and the disc is only read.
 
-If the folder cannot be opened, the Player shows a path field and an **Open game folder**
-button. A successful choice is remembered in the user's settings. `--game-folder` sets the
+If the folder cannot be opened, the Player shows the **Game Files** screen: a game folder field and
+an optional music field, each with **BROWSE**, which lists the drives (with their volume labels),
+folders and `.cue` files and marks a *Mercenaries* folder or the Titanium CD. **OPEN** (or Enter)
+opens the choice. A successful choice is remembered in the user's settings. `--game-folder` sets the
 path for the current run only and takes priority over the saved choice; without it the
 `MW2_GAME_FOLDER` environment variable is used as the default. Multiplayer on the title
 screen passes the chosen folder to the new MercNet process. In batch mode a missing folder
