@@ -138,6 +138,12 @@ namespace MW2
             return true;
         }
 
+        /// <summary>
+        /// Port addition: false leaves the mouse out (no buttons, pointer outside the window), for tools that run the game
+        /// with no person at the controls. Locking the cursor is not enough: Input.mousePosition keeps the pointer's place.
+        /// </summary>
+        public static bool UseMouse = true;
+
         public static void Poll()
         {
             if (_frame == Time.frameCount) return;
@@ -163,8 +169,8 @@ namespace MW2
                     if (bit == 0x77) return ctrl;
                     return bit >= 0 && bit < KeyboardBits.Length && KeyboardBits[bit] != KeyCode.None && Input.GetKey(KeyboardBits[bit]);
                 },
-                MouseButtons = (Input.GetMouseButton(0) ? 1 : 0) | (Input.GetMouseButton(2) ? 2 : 0) | (Input.GetMouseButton(1) ? 4 : 0),
-                MouseInside = mouse.x >= 0 && mouse.y >= 0 && mouse.x < Screen.width && mouse.y < Screen.height,
+                MouseButtons = !UseMouse ? 0 : (Input.GetMouseButton(0) ? 1 : 0) | (Input.GetMouseButton(2) ? 2 : 0) | (Input.GetMouseButton(1) ? 4 : 0),
+                MouseInside = UseMouse && mouse.x >= 0 && mouse.y >= 0 && mouse.x < Screen.width && mouse.y < Screen.height,
                 // Screen y grows downwards in the original (client coordinates).
                 MouseY = (int)(((Screen.height - mouse.y) * 2 - Screen.height) * 0x10000L / Mathf.Max(1, Screen.height)),
                 MouseX = (int)((mouse.x * 2 - Screen.width) * 0x10000L / Mathf.Max(1, Screen.width))

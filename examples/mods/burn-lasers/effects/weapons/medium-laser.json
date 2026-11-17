@@ -1,0 +1,7 @@
+{
+  // The beam is there at once (reach "instant") and burns while the game's shot is under way, at least 0.3 s; then it fades in 0.1 s.
+  "shot":   { "hideOriginal": true,
+              "prefab": { "bundle": "lasers", "asset": "BeamGreen", "reach": "instant", "stretch": true, "hold": 0.3, "life": 0.1, "flicker": 0.35 } },
+  "muzzle": { "hideOriginal": true },
+  "impact": { "hideOriginal": true, "prefab": { "bundle": "lasers", "asset": "Burn", "life": 0.6, "scale": 1.0 } }
+}

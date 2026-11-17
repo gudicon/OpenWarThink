@@ -332,6 +332,7 @@ namespace MW2
                     playerCombat.PlanetTemperature = mission.Temperature;
                     playerCombat.HostileAtmosphere = mission.HostileAtmosphere;
                     playerCombat.GamepieceType = BwdSkeleton.DecodeGamepieceType(prj.Read("BWD", mech));
+                    playerCombat.ModelName = mech.ToUpperInvariant();
                     playerCombat.OriginHeight = BwdSkeleton.OriginHeight(prj, mech);
                     playerCombat.ModelRadius = BwdSkeleton.UnitRadius(prj, mech);
                 }
@@ -878,6 +879,7 @@ namespace MW2
                         combat.GamepieceIndex = mission.Spawns.IndexOf(unit);
                         combat.Team = unit.Team;
                         combat.GamepieceType = BwdSkeleton.DecodeGamepieceType(prj.Read("BWD", unit.Model));
+                        combat.ModelName = unit.Model?.ToUpperInvariant();
                         combat.OriginHeight = BwdSkeleton.OriginHeight(prj, unit.Model);
                         combat.ModelRadius = BwdSkeleton.UnitRadius(prj, unit.Model);
                         combat.PlanetTemperature = mission.Temperature;

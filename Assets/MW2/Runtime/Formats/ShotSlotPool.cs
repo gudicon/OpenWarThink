@@ -36,6 +36,21 @@ namespace MW2.Formats
         /// <summary>0x10010dcf: release without modifying the previous-segment coordinates.</summary>
         public void Release(int index) { _slots[index].Active = false; }
         public AiLeadPoint.Vector Previous(int index) => _slots[index].Previous;
+
+        /// <summary>
+        /// Port option, off by default (the original): a rules mod (GameRules "fixInstantShots") turns it on. In the original
+        /// a reused slot keeps the point where its last shot stopped (Shot_Clear 0x10010dcf), so the next shot's first
+        /// Shot_Move 0x10010f40 tests "that point -> its start": a shot through a slot whose last shot stopped at the target
+        /// hits at once. With this option a new shot's history starts at its own start point instead.
+        /// </summary>
+        public static bool FreshStart;
+
+        /// <summary>Weapon_FireProjectile 0x1006c554 placed a shot at <paramref name="start"/>: with <see cref="FreshStart"/>
+        /// its history begins there; without it the slot keeps the retained point, as in the original.</summary>
+        public void Start(int index, AiLeadPoint.Vector start)
+        {
+            if (FreshStart && index >= 0 && index < Capacity) _slots[index].Previous = start;
+        }
         /// <summary>0x10010f40: store the node's current position before integrating its next position.</summary>
         public void Advance(int index, AiLeadPoint.Vector current) { _slots[index].Previous = current; }
     }

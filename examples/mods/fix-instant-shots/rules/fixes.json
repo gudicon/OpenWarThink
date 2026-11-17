@@ -1,0 +1,7 @@
+{
+  // In the original game a projectile slot keeps the point where its last shot stopped, and the next shot through
+  // that slot starts its hit test there: at a target that stood still, every second shot of a weapon hits at once.
+  // With this fix every shot starts its hit test where it leaves the weapon, for all weapons.
+  // This changes how the game plays: everyone in a network game needs this mod too.
+  "fixInstantShots": true
+}

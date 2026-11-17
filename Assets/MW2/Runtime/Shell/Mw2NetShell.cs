@@ -96,7 +96,7 @@ namespace MW2.Shell
         {
             Close();
             _callsign = callsign;
-            _net = new NetTransport(callsign, port);
+            _net = new NetTransport(callsign, port) { ModSet = Mw2Mods.Catalog.Fingerprint() };
             _net.Host($"{callsign}'s Ready Room", maxPlayers, password);     // "%s's Ready Room"
             _session = new NetLobbySession(_net) { WantMech = (ushort)((_chassis << 7) | _variant) };
             _session.OpenHost(_missions[mission].Prefix, options, team, timeOfDay: _hostTimeOfDay);
@@ -107,7 +107,7 @@ namespace MW2.Shell
         {
             Close();
             _callsign = callsign;
-            _net = new NetTransport(callsign);
+            _net = new NetTransport(callsign) { ModSet = Mw2Mods.Catalog.Fingerprint() };
             _net.Join(host, password);
             _session = new NetLobbySession(_net) { WantMech = (ushort)((_chassis << 7) | _variant) };
             _screen = Screen.Ready;

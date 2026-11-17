@@ -1,0 +1,21 @@
+{
+  // large-laser: pale blue. A file named after one weapon (for example LLAS.json)
+  // next to this one would win over it for that weapon.
+  "laser": {
+    "reach": "shot",
+    "width": 0.17,
+    "color": "#66b3ff",
+    "glow": 2.5, "haloGlow": 1.0, "halo": 2.5,
+    "strands": 2, "waver": 2.0, "ripple": 25, "speed": 4,
+    "duration": 0.18,
+    "nearFade": [3, 15],
+    "lights": { "intensity": 0.35, "range": 18, "max": 4 }
+  },
+  "muzzle": { "hideOriginal": true },
+  "impact": {
+    "hideOriginal": true,
+    "flash": { "size": 2.38, "grow": 1.8, "color": "#66b3ff", "time": 0.15 },
+    "light": { "color": "#66b3ff", "range": 10, "intensity": 0.8, "time": 0.25 },
+    "sparks": { "count": 14, "speed": 9, "size": 0.12, "life": 0.45, "spread": 75, "color": "#ffffffe0", "endColor": "#66b3ff00" }
+  }
+}

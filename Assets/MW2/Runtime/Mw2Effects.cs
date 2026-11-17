@@ -120,8 +120,14 @@ namespace MW2
             Camera.onPostRender -= DrawSmoke;
         }
 
-        /// <summary>0x10011ea8: start the effect of <paramref name="code"/> at <paramref name="point"/>.</summary>
-        public void Spawn(int code, Vector3 point, Transform hitUnit = null, Transform muzzle = null, Mw2MechCombat owner = null)
+        /// <summary>
+        /// 0x10011ea8: start the effect of <paramref name="code"/> at <paramref name="point"/>. With
+        /// <paramref name="visible"/> false (a port extension draws it instead, Mw2WeaponView) everything runs as usual
+        /// (slot, duration, sound, sun flash, area damage, debris) but the slot's model is not drawn and no light or ground
+        /// glow starts.
+        /// </summary>
+        public void Spawn(int code, Vector3 point, Transform hitUnit = null, Transform muzzle = null, Mw2MechCombat owner = null,
+                          bool visible = true)
         {
             if (code < 0) return;
             int id = code & 0xff;
@@ -159,11 +165,12 @@ namespace MW2
             }
             int baseId = code & 0xff;
             bool light = baseId == 3 || baseId == 0x22 || baseId == 0x23 || baseId == 6;
-            StartSlot(id, code, point, hitUnit, muzzle, owner, light);
+            StartSlot(id, code, point, hitUnit, muzzle, owner, light, visible);
             if (debrisToo) Spawn(0x10b, point, null, null, owner);     // 0x10011e0b
         }
 
-        void StartSlot(int id, int code, Vector3 point, Transform hitUnit, Transform muzzle, Mw2MechCombat owner, bool light = false)
+        void StartSlot(int id, int code, Vector3 point, Transform hitUnit, Transform muzzle, Mw2MechCombat owner, bool light = false,
+                       bool visible = true)
         {
             if (id >= Defs.Count) return;
             var def = Defs[id];
@@ -189,7 +196,7 @@ namespace MW2
 
             free.Active = true;
             free.Left = def.Duration;
-            if (light) StartLight(point, def.Duration + _lastDt);
+            if (light && visible) StartLight(point, def.Duration + _lastDt);
             if (def.Flash && SunFlashes) StartFlash(free, point, def.Duration);
             free.Follow = null;
             free.Moving = false;
@@ -207,6 +214,8 @@ namespace MW2
             if (muzzle != null && id >= 0x17 && id <= 0x21) t.SetPositionAndRotation(muzzle.position, muzzle.rotation);
             else t.SetPositionAndRotation(point, Quaternion.identity);
             free.Model.SetActive(true);
+            // Drawn by an extension instead: the slot runs, its model is not drawn (and is drawn again on its next use).
+            foreach (var r in free.Model.GetComponentsInChildren<Renderer>(true)) r.enabled = visible;
             var anim = Mw2TextureAnimator.Instance;
             if (anim != null && free.Key >= 0)
             {

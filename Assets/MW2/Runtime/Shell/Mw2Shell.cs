@@ -202,6 +202,8 @@ namespace MW2.Shell
             Prj = new PrjArchive(Path_("MW2.PRJ"));
             Data = new ShellData(Prj, ShellTables.FromStore(GameFolder), GameFolder);
             Menu = ShellMenu.From(Data.Tables.Defaults.Menu);
+            Menu.InsertAfter(ShellMenu.CockpitControls, ShellMenu.Mods, "&Mods");
+            Mw2Mods.Reload();
             DifficultyConfig.UserFolder = SoundConfig.UserFolder = Application.persistentDataPath;
             InstantAction.UserFolder = Application.persistentDataPath;
             CombatVariablesScreen.Load(this);   // the shell's mw2snd.cfg / mw2dif.cfg blocks (FUN_1002782a, FUN_10027871)
@@ -958,7 +960,7 @@ namespace MW2.Shell
         static readonly int[] PortedCommands =
         {
             ShellMenu.NewMercenary, ShellMenu.FleeToWindows, ShellMenu.SaveLoad, ShellMenu.Retire, ShellMenu.Dropship, ShellMenu.MercLords,
-            ShellMenu.CombatVariables, ShellMenu.FirstCircuit, ShellMenu.CockpitControls,
+            ShellMenu.CombatVariables, ShellMenu.FirstCircuit, ShellMenu.CockpitControls, ShellMenu.Mods,
             ShellMenu.Newsfeed, ShellMenu.Contracts, ShellMenu.Personnel, ShellMenu.Inventory, ShellMenu.Financial,
             ShellMenu.Repair, ShellMenu.ArmsMerchant, ShellMenu.MechFactory, ShellMenu.Customization,
             ShellMenu.WeaponsGrouping, ShellMenu.DutyRoster, ShellMenu.LaunchMission
@@ -1002,6 +1004,13 @@ namespace MW2.Shell
                     Menu.Enable(ShellMenu.CockpitControls, false);
                     Menu.Enable(ShellMenu.SaveLoad, false);
                     ControlsScreen.Open(this);
+                    break;
+                case ShellMenu.Mods:
+                    // Port extension: the mods list (ModsScreen), opened as a hook like Cockpit Controls.
+                    CloseHook();
+                    Menu.Enable(ShellMenu.Mods, false);
+                    Menu.Enable(ShellMenu.SaveLoad, false);
+                    ModsScreen.Open(this);
                     break;
                 case ShellMenu.FirstCircuit:
                     // FUN_100440bc, The First Circuit and Save/Load off, FUN_1000fe40.
@@ -1219,6 +1228,7 @@ namespace MW2.Shell
             }
             DrawMenu(r);
             ControlsScreen.Draw(this);
+            ModsScreen.Draw(this);
             if (_dialogLines != null && Event.current.type == EventType.Repaint) DrawDialog();
         }
 

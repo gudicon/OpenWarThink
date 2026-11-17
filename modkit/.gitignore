@@ -1,0 +1,13 @@
+/[Ll]ibrary/
+/[Tt]emp/
+/[Oo]bj/
+/[Bb]uild/
+/[Ll]ogs/
+/[Uu]ser[Ss]ettings/
+*.csproj
+*.sln
+/[Aa]ssets/MyMod/
+/[Aa]ssets/MyMod.meta
+/Packages/packages-lock.json
+/ProjectSettings/*.asset
+/ProjectSettings/*.json

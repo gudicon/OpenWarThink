@@ -27,6 +27,7 @@ Shader "MW2/TexturedAlphaLit"
             #include "Mw2Light.cginc"
             #include "Mw2Palette.cginc"
             #include "Mw2Enhanced.cginc"
+            #include "Mw2ExtraLight.cginc"
 
             sampler2D _MainTex;
             float4 _MainTex_ST;
@@ -69,7 +70,8 @@ Shader "MW2/TexturedAlphaLit"
                 if (_ShadeFull > 0.5) light = 1;
                 fixed4 tex = Mw2SampleMain(_MainTex, _MainTex_TexelSize, i.uv);
                 clip(tex.a - 1.0 / 255.0);
-                return fixed4(Mw2Fog(tex.rgb * i.color.rgb * light, i.fogDepth), tex.a * i.color.a);
+                float3 extraLight = _Unlit > 0.5 || _ShadeFull > 0.5 ? 0 : Mw2ExtraLight(n, i.worldPos);   // port extensions only (0 without them)
+                return fixed4(Mw2Fog(tex.rgb * i.color.rgb * (light + extraLight), i.fogDepth), tex.a * i.color.a);
             }
             ENDCG
         }

@@ -61,3 +61,7 @@ __pycache__/
 *.MW2
 *.MWM
 *.snapshot
+
+# Asset Store packs imported into the mod kit; their licences do not allow redistribution
+/modkit/Assets/Game Assets/
+/modkit/Assets/Game Assets.meta

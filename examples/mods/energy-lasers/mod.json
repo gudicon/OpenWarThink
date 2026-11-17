@@ -1,0 +1,8 @@
+{
+  "id": "energy-lasers",
+  "name": "Energy Lasers",
+  "version": "1.0",
+  "author": "OpenWarThink",
+  "description": "Lasers as wavering energy beams: small red, medium green, large blue; pulse lasers flash three times.",
+  "api": 1
+}

@@ -19,6 +19,21 @@ namespace MW2.Shell
             Newsfeed = 0x9c9d, Contracts = 0x9c9e, Personnel = 0x9c9f, Inventory = 0x9ca0, Financial = 0x9ca1, Repair = 0x9ca2,
             ArmsMerchant = 0x9ca3, MechFactory = 0x9ca4, Customization = 0x9ca5, WeaponsGrouping = 0x9ca6, Dropship = 0x9ca7,
             DutyRoster = 0x9ca8, LaunchMission = 0x9ca9, Retire = 0x9caa, VideoOptions = 0x9cab;
+        /// <summary>Port addition: Options -> Mods (ModsScreen). The id is outside the range of MW2SHELL.DLL's menu.</summary>
+        public const int Mods = 0xa000;
+
+        /// <summary>Port addition: puts an item after <paramref name="afterId"/> in the same popup (no-op when it is there).</summary>
+        public void InsertAfter(int afterId, int id, string text)
+        {
+            if (Find(id) != null) return;
+            foreach (var p in Popups)
+            {
+                int i = p.Items.FindIndex(x => x.Id == afterId);
+                if (i < 0) continue;
+                p.Items.Insert(i + 1, new Item { Id = id, Text = text, Grayed = p.Items[i].Grayed });
+                return;
+            }
+        }
 
         public sealed class Item
         {
@@ -126,6 +141,7 @@ namespace MW2.Shell
             EnablePopup(1, true);
             foreach (int id in new[] { NewMercenary, MercLords, SaveLoad, CombatVariables, CockpitControls, MoviePlayback, FirstCircuit })
                 Enable(id, true);
+            Enable(Mods, true);     // port addition, follows Cockpit Controls
         }
 
         /// <summary>FUN_10043a00 0x10043a00.</summary>
@@ -135,6 +151,7 @@ namespace MW2.Shell
             EnablePopup(1, false);
             foreach (int id in new[] { NewMercenary, MercLords, SaveLoad, CombatVariables, CockpitControls, MoviePlayback, FirstCircuit })
                 Enable(id, false);
+            Enable(Mods, false);    // port addition, follows Cockpit Controls
         }
 
         /// <summary>FUN_100423aa 0x100423aa: the Facility popup only for a registered career outside the title, the

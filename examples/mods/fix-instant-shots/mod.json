@@ -1,0 +1,8 @@
+{
+  "id": "fix-instant-shots",
+  "name": "Fix Instant Shots",
+  "version": "1.0",
+  "author": "OpenWarThink",
+  "description": "Every shot flies its whole way. In the original game every second shot at a target that stood still hit at once.",
+  "api": 1
+}

@@ -32,6 +32,7 @@ Shader "MW2/VertexColorLit"
             #include "Mw2Light.cginc"
             #include "Mw2Palette.cginc"
             #include "Mw2Enhanced.cginc"
+            #include "Mw2ExtraLight.cginc"
 
             float _Ambient;
             float4 _LightColor0;
@@ -72,13 +73,14 @@ Shader "MW2/VertexColorLit"
                 float3 n = normalize(i.normal) * (facing > 0 ? 1 : -1);
                 float diffuse = saturate(dot(n, normalize(_WorldSpaceLightPos0.xyz)));
                 float light = _Ambient + (1 - _Ambient) * diffuse;
+                float3 extraLight = _ShadeFull > 0.5 ? 0 : Mw2ExtraLight(n, i.worldPos);   // port extensions only (0 without them)
 
                 float high = floor(i.material.y + 0.5);
                 float type = floor(high / 16);
                 // Type 4: the table 0x102880c0 is filled once from the mission's first palette (Palette_FillLightTable
                 // 0x10004cc0), so it does not follow the live palette; the vertex colours are interpolated RGB.
                 // UV1.x is the vertex index a; Glide interpolates the RGB, so the table is read per vertex in vert().
-                if (_UsePalette > 0.5 && type == 4) return fixed4(i.color.rgb, 1);
+                if (_UsePalette > 0.5 && type == 4) return fixed4(i.color.rgb * (1 + extraLight), 1);
                 if (_UsePalette > 0.5 && type == 1)
                 {
                     float shade;
@@ -88,14 +90,14 @@ Shader "MW2/VertexColorLit"
                     float index = (high - type * 16) * 16 + shade;
                     // The cockpit shell keeps the colours of the mission's palette (it does not turn with the infrared one).
                     float3 rowColor = _ShadeFull > 0.5 ? tex2Dlod(_Palette, float4((index + 0.5) / 256, 0.5, 0, 0)).rgb : Mw2PaletteColor(index);
-                    return fixed4(Mw2Fog(rowColor, i.fogDepth), 1);
+                    return fixed4(Mw2Fog(rowColor * (1 + extraLight), i.fogDepth), 1);
                 }
                 // Other flat types are not lit by Material_Shade: UV1.x is the palette index itself (PolyMeshBuilder.MaterialId),
                 // read from the live palette; without a palette material the baked vertex colour stays.
                 if (_UsePalette > 0.5 && type != 3)
-                    return fixed4(Mw2Fog(Mw2PaletteColor(floor(i.material.x + 0.5)), i.fogDepth), 1);
+                    return fixed4(Mw2Fog(Mw2PaletteColor(floor(i.material.x + 0.5)) * (1 + extraLight), i.fogDepth), 1);
                 if (_Mw2LightParams.w > 0.5) light = 1;
-                return fixed4(Mw2Fog(i.color.rgb * light, i.fogDepth), 1);
+                return fixed4(Mw2Fog(i.color.rgb * (light + extraLight), i.fogDepth), 1);
             }
             ENDCG
         }

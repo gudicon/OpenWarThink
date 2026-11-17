@@ -61,6 +61,8 @@ namespace MW2
         /// <summary>The MEK the unit was loaded from and its name (GPS +0x25, DAT_100afa45: also the wreck's name).</summary>
         public byte[] MekBytes;
         public string MekName;
+        /// <summary>The unit's model (its BWD name, e.g. ATLAS); port field naming the unit for look mods (MechLook).</summary>
+        public string ModelName;
         /// <summary>Gamepiece flag +0xe42 &amp; 2: loaded from a MEK the shell wrote; Units_WriteMeks writes it back.</summary>
         public bool CareerUnit;
 
@@ -433,6 +435,19 @@ namespace MW2
         public Vector3 Chest => TryGetComponent<BoxCollider>(out var b) ? transform.TransformPoint(b.center) : transform.position + Vector3.up * 5;
 
         public bool Works(int i) => i >= 0 && i < Weapons.Count && !Weapons[i].Broken;
+
+        /// <summary>
+        /// Port addition for tools: fire the selected weapon as the trigger would, when it is ready and the mech is powered
+        /// up. Returns whether a burst started.
+        /// </summary>
+        internal bool FireSelected()
+        {
+            if (PowerState != 2 || ShutDown || PoweredDown || PoweringUp || Weapons.Count == 0) return false;
+            int i = Mathf.Clamp(SelectedWeapon, 0, Weapons.Count - 1);
+            if (Weapons[i].State != 1 || !Works(i)) return false;
+            StartBurst(i);
+            return true;
+        }
         /// <summary>Weapon ready to fire (slot state 1, 0x1006d11b) with ammunition left (0x10006032).</summary>
         public bool IsReady(int i) => Works(i) && Weapons[i].State == 1 && Weapons[i].Ammo != 0;
         /// <summary>The AI pulls the trigger of one weapon (control +0x25) or of a group (+0x27).</summary>
@@ -782,6 +797,7 @@ namespace MW2
             // Exhaustion leaves audio/muzzle effects and the hook return value intact.
             var shotModels = Mw2ShotModels.Instance;
             int shotSlot = shotModels != null ? shotModels.Take(w.Def.ProjectileType) : -1;
+            Vector3? shotDirection = null;
             if (shotSlot >= 0)
             {
                 TryGetComponent<Mw2TorsoTwist>(out var twist);
@@ -793,6 +809,7 @@ namespace MW2
                 var converged = AiFireGeometry.ConvergedDirection(new AiLeadPoint.Vector(e.x, e.y, e.z),
                     new AiLeadPoint.Vector(aim.x, aim.y, aim.z), new AiLeadPoint.Vector(m.x, m.y, m.z), _aimConvergence.Distance);
                 var direction = new Vector3(converged.X, converged.Y, converged.Z);
+                shotDirection = direction;
 
                 var homing = w.LockTarget != null && !w.LockTarget.Destroyed ? w.LockTarget : null;
                 Mw2Projectile.Spawn(this, w.Def, from, direction, w.Def.LifetimeTicks - w.Timer, homing, shotModels, shotSlot);
@@ -801,11 +818,13 @@ namespace MW2
             if (Mw2Audio.Instance != null) Mw2Audio.Instance.Play(w.Def.Sound, from, false, 100, Mw2Cockpit.PlayerInCockpit);
             // 0x10011e79: the weapon's two shot effects (+0x18, +0x1C) on the muzzle (flash of the autocannons).
             var effects = Mw2Effects.Instance;
+            // A port extension may draw the muzzle (Mw2WeaponView), along the shot or else the way the unit faces.
+            bool original = Mw2WeaponView.Fired(w.Def, this, from, shotDirection ?? transform.forward);
             if (effects != null)
             {
                 var muzzle = mounts != null ? mounts.MuzzleNode(w.Section) : null;
-                effects.Spawn(w.Def.FireEffect1, from, null, muzzle);
-                effects.Spawn(w.Def.FireEffect2, from, null, muzzle);
+                effects.Spawn(w.Def.FireEffect1, from, null, muzzle, null, original);
+                effects.Spawn(w.Def.FireEffect2, from, null, muzzle, null, original);
             }
             return more;
         }
@@ -1281,6 +1300,12 @@ namespace MW2
                 if (top) tops.Add(node);
             }
             var fx = Mw2Effects.Instance;
+            if (tops.Count > 0 && !_blowingApart)
+            {
+                var middle = Vector3.zero;
+                foreach (var top in tops) middle += top.position;
+                Mw2UnitView.SectionLost(this, location, middle / tops.Count);
+            }
             var nodes = new List<Transform>();
             foreach (var top in tops) CollectNodes(top, nodes);
             foreach (var node in nodes)
@@ -1502,9 +1527,18 @@ namespace MW2
         {
             if (!Destroyed || _blownApart) return;
             _blownApart = true;
-            for (int section = 1; section <= 8; section++) BlowOffSection(section);
+            Mw2UnitView.BlownApart(this, Origin);
+            _blowingApart = true;
+            try { for (int section = 1; section <= 8; section++) BlowOffSection(section); }
+            finally { _blowingApart = false; }
             if (Mw2Audio.Instance != null) Mw2Audio.Instance.Play(0xa9, transform.position);
         }
+
+        /// <summary>While Mech_BlowApart throws every section: they are one event for a look mod, not eight.</summary>
+        bool _blowingApart;
+
+        /// <summary>The test range's kill key (port addition): the unit is destroyed as by Mech_Destroy 0x10035ef6.</summary>
+        public void Kill(Mw2MechCombat source) => Die(source);
 
         /// <summary>
         /// Mech_UpdateControl 0x1003a449 state 4 with FUN_1003292e 0x1003292e: the first update after Mech_Destroy (which
@@ -1526,14 +1560,17 @@ namespace MW2
             var origin = Origin;
             if (_deathEnd == 0)
             {
-                if (fx != null) fx.Spawn(0xd, origin, null, null, _killer);
+                // A look mod may draw this explosion instead (Mw2UnitView); the effect runs either way.
+                if (fx != null) fx.Spawn(0xd, origin, null, null, _killer, Mw2UnitView.Died(this, origin));
                 _deathEnd = now + 0x712;
             }
             if (UnityEngine.Random.Range(0, 100) >= 0x15) return;
             const float units = MW2.Formats.PolyModel.UnitsToMeters;
             origin.x += (int)Mw2Effects.Gauss() / 2 * units;
             origin.z += (int)Mw2Effects.Gauss() / 2 * units;
-            if (fx != null) fx.Spawn(UnityEngine.Random.Range(0, 100) < 0x3c ? 3 : 0x10b, origin, null, null, _killer);
+            if (fx == null) return;
+            int code = UnityEngine.Random.Range(0, 100) < 0x3c ? 3 : 0x10b;
+            fx.Spawn(code, origin, null, null, _killer, code != 3 || Mw2UnitView.Burst(this, origin));
         }
 
         /// <summary>

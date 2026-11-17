@@ -40,6 +40,8 @@ Work in progress. What works today, with your own copy of the game:
 - the Mercenaries shell: career, contracts, finances, MechLab, repair, salvage, saving and loading,
   Instant Action and random missions;
 - MercNet multiplayer over a local network;
+- mods (an addition of the port): weapon looks, mech destruction explosions and optional fixes, from a `Mods`
+  folder next to the game, with a test range to try them (see [Mods](#mods));
 - Windows (64-bit) and macOS 12+ (Intel and Apple silicon).
 
 The whole story campaign has been played through to its ending by automated pilots
@@ -65,6 +67,8 @@ the original game.
 | Path | Contents |
 |---|---|
 | `Assets/MW2` | The engine: file format decoders, simulation, AI, HUD, shell (career, MechLab), network. |
+| `modkit/` | The Mod Kit: a small Unity project that makes weapon and explosion looks and builds their asset bundles, see [modkit/README.md](modkit/README.md) |
+| `examples/mods/` | Example mods, ready to copy into the game's `Mods` folder, see [examples/mods/README.md](examples/mods/README.md) |
 | `tools/` | `build_player.ps1`, `rip_cue_music.py` and [tools/README.md](tools/README.md): building a Windows Player, running it against a game folder, adding mission music from your own disc image |
 
 ## Requirements
@@ -143,6 +147,35 @@ The test pilot is off by default and drives the mech through the ordinary player
 | `--mw2-mission-checks` | Check mission win/loss conditions on synthetic scenarios |
 
 The original `F8`–`F10` bindings stay available. Command-line options apply to a built Player.
+
+## Mods
+
+Mods are an addition of the port; without any, the game plays exactly as the original. A mod is a folder with a
+`mod.json` in the `Mods` folder next to the game. In the shell, move the mouse to the top of the screen and open
+**Options → Mods**: switch mods on or off, change their order (when two mods have the same file, the one lower in
+the list wins; conflicts are listed), **RELOAD** after adding a folder, **OPEN MODS FOLDER**, **ACCEPT** to apply.
+
+What a mod can change today:
+
+- **weapon looks** (`effects/weapons`): the shot in flight, the muzzle flash and the impact, for one weapon, a class
+  or a family; from JSON alone (beams, flashes, sparks, lights) or with prefabs from a Unity asset bundle;
+- **mech destruction** (`effects/mechs`): the explosion of a destroyed mech, the bursts on the wreck, a blown-off
+  section and a wreck breaking apart, for one model, a weight class or every unit;
+- **fixes** (`rules/fixes.json`): `fixInstantShots` makes every shot fly the whole way (in the original every second
+  shot at a target that stands still hits at once). A fix changes the game, so in MercNet every player needs it.
+
+MercNet only lets players join whose active mods match the host's. Effect files reload while the game runs.
+
+**TEST RANGE** on the Mods screen opens a mission to try looks in:
+
+| Keys | What it does |
+|---|---|
+| `Ctrl`+`Shift`+`[` / `]` | Previous / next weapon type |
+| `Ctrl`+`Shift`+`F` | Fire the selected weapon on its own, again and again |
+| `Ctrl`+`Shift`+`K` | Destroy the nearest target |
+
+To make looks of your own, use the [Mod Kit](modkit/README.md); [examples/mods](examples/mods/README.md) has
+ready mods (`energy-lasers`, `burn-lasers`, `fix-instant-shots`).
 
 ## What is not in this repository
 

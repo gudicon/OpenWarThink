@@ -17,7 +17,7 @@ namespace MW2
     /// (scaled by 0.95 inside 3000 units) minus the unit velocity; within 100 units it bursts (Detonate: no damage).
     /// Missiles leave smoke (Mw2Effects.Smoke) and every hit starts the weapon's impact effect (Mw2Effects.Spawn).
     /// With Multiple Lights each shot carries a point light and a ground glow (see Spawn).
-    /// Approximations: model geometry/radius and per-object Unity update clocks remain adapters.
+    /// All shots move by one shared frame tick count (see Update). Approximation: model geometry/radius remain adapters.
     /// Not ported: the smoothed homing of weapon flag 0x10 (slot +4 = weapon +8; 0x10011c4e: a += (target - a) * k with the
     /// integer k = dt * 4 * 0xb5 converted to float). Only cTorpedo (type 32, flags 0x15) has the flag, no MEK in MW2.PRJ
     /// carries it and the shell's stock drops it, so no shipped mission fires such a shot.
@@ -31,11 +31,16 @@ namespace MW2
         Vector3 _velocity;      // units per tick, Unity axes
         Vector3 _accel;         // units per tick^2
         int _life;
-        double _clock;
-        int _now;
+        int _bornFrame;
         bool _proximity;
+
+        // Shots_Update 0x10010eb7 moves every live shot by the same frame tick count (DAT_100a6644 from the shared clock
+        // FUN_10015f3d), so all shots share one clock, advanced once per Unity frame.
+        static double s_clock;
+        static int s_now, s_dt, s_frame = -1;
         ShotSlotPool _pool;
         int _slot = -1, _poolGeneration;
+        IShotView _view;        // a port extension's picture of this shot (Mw2WeaponView), or null
 
         /// <summary>Shots in flight (the pool 0x1023c900), for the AMS scan.</summary>
         public static readonly System.Collections.Generic.List<Mw2Projectile> Active = new System.Collections.Generic.List<Mw2Projectile>();
@@ -58,6 +63,7 @@ namespace MW2
         }
         void Retire()
         {
+            _view?.Gone(transform.position);
             ReleaseSlot();
             Active.Remove(this);
             if (s_followed == this) s_followed = null;
@@ -109,6 +115,9 @@ namespace MW2
             shot._def = def;
             shot._homing = homing;
             shot._life = lifeTicks;
+            shot._bornFrame = Time.frameCount;
+            shot._view = Mw2WeaponView.Shot(def, owner, muzzle, direction, def.Speed * lifeTicks * Units);
+            bool hide = shot._view != null && !shot._view.DrawsOriginal;
             shot._velocity = direction * def.Speed;
             float planetGravity = owner != null && owner.TryGetComponent<Mw2MechController>(out var controller)
                 ? controller.PlanetGravity : 0.0296f;
@@ -119,6 +128,8 @@ namespace MW2
                 foreach (var part in models.Parts)
                 {
                     if (part.Type != def.ProjectileType || part.Mesh == null) continue;
+                    radius = Mathf.Max(radius, part.Mesh.bounds.extents.magnitude * Mathf.Max(part.Scale.x, Mathf.Max(part.Scale.y, part.Scale.z)));
+                    if (hide) continue;     // an extension draws the shot; the start offset below still uses the radius
                     var child = new GameObject(part.Mesh.name);
                     child.transform.SetParent(go.transform, false);
                     child.transform.localScale = part.Scale;
@@ -129,7 +140,6 @@ namespace MW2
                         for (int i = 0; i < mats.Length; i++) mats[i] = Mw2TextureAnimator.Instance.Live(mats[i]);
                     r.sharedMaterials = mats;
                     r.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
-                    radius = Mathf.Max(radius, part.Mesh.bounds.extents.magnitude * Mathf.Max(part.Scale.x, Mathf.Max(part.Scale.y, part.Scale.z)));
                 }
 
             var start = muzzle;
@@ -145,6 +155,8 @@ namespace MW2
             if ((def.Flags & 0x40) == 0) start += direction * (2f * radius);
             go.transform.position = start;
             shot.Face();
+            // Port option (rules mod): the shot's history starts here instead of the slot's retained point.
+            if (slot >= 0) models.Pool.Start(slot, new AiLeadPoint.Vector(start.x / Units, start.y / Units, start.z / Units));
 
             // 0x1006c554 with Multiple Lights on (DAT_100b1958): a point light (Light_Set flags 0x107: a cube of
             // +-10000 units, colour 0.2, 0.2, 0.2 or the model's palette colour / 128), moved to the shot by every
@@ -153,13 +165,14 @@ namespace MW2
             if (models != null)
                 foreach (var g in models.Glows)
                     if (g.Type == def.ProjectileType) { glow = g.Rgb; break; }
-            if (Mw2Options.MultipleLights)
+            if (Mw2Options.MultipleLights && !hide)
             {
                 var light = go.AddComponent<Mw2PointLight>();
                 light.Radius = 10000f * Units;
                 light.Color = glow.HasValue ? new Color(glow.Value.r / 128f, glow.Value.g / 128f, glow.Value.b / 128f) : new Color(0.2f, 0.2f, 0.2f);
             }
-            if (Mw2Effects.Instance != null) Mw2Effects.Instance.StartShotGlow(go.transform, glow);
+            if (Mw2Effects.Instance != null && !hide) Mw2Effects.Instance.StartShotGlow(go.transform, glow);
+            shot._view?.Started(go.transform);
         }
 
         void Face()
@@ -170,12 +183,20 @@ namespace MW2
 
         void Update()
         {
-            _clock += Time.deltaTime * MechMotion.TicksPerSecond;
-            int now = (int)_clock, dt = now - _now;
-            _now = now;
-            if (dt <= 0) return;
+            int frame = Time.frameCount;
+            if (frame != s_frame)
+            {
+                s_frame = frame;
+                s_clock += Time.deltaTime * MechMotion.TicksPerSecond;
+                int now = (int)s_clock;
+                s_dt = now - s_now;
+                s_now = now;
+            }
+            // SimMain runs Shots_Update before the units' control pass that fires, so a shot fired in a frame first
+            // moves in the next one, whatever order Unity updates the components in.
+            if (_bornFrame == frame || s_dt <= 0) return;
 
-            Move(dt);
+            Move(s_dt);
         }
 
         // Shot_Move 0x10010f40; dt is the frame's integer tick count.
@@ -245,7 +266,8 @@ namespace MW2
                 flags = 0x100 | (unit.IsPlayer ? 0x4000 : 0);
             }
             var effects = Mw2Effects.Instance;
-            if (effects != null) effects.Spawn(_def.ImpactEffect | flags, point, unit != null ? unit.transform : null, null, _owner);
+            bool original = _view == null || _view.Hit(point, -_velocity);
+            if (effects != null) effects.Spawn(_def.ImpactEffect | flags, point, unit != null ? unit.transform : null, null, _owner, original);
             Retire();
         }
 
@@ -278,7 +300,8 @@ namespace MW2
             // 0x10011d40 -> 0x10011ea8: impact effect +0x14 with the hit flags (0x100 unit, 0x4000 the player, 0x200
             // building, 0x400 ground or other scenery).
             int flags = unit != null ? 0x100 | (unit.IsPlayer ? 0x4000 : 0) : structure != null ? 0x200 : debrisHit ? 0 : 0x400;
-            if (effects != null) effects.Spawn(_def.ImpactEffect | flags, point, unit != null ? unit.transform : null, null, _owner);
+            bool original = _view == null || _view.Hit(point, -_velocity);
+            if (effects != null) effects.Spawn(_def.ImpactEffect | flags, point, unit != null ? unit.transform : null, null, _owner, original);
             Retire();
         }
     }

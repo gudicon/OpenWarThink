@@ -1,0 +1,22 @@
+{
+  // medium-pulse-laser: green, three short flashes a shot. A file named after one weapon (for example MPLAS.json)
+  // next to this one would win over it for that weapon.
+  "laser": {
+    "reach": "shot",
+    "width": 0.13,
+    "color": "#40f24d",
+    "glow": 2.5, "haloGlow": 1.0, "halo": 2.5,
+    "strands": 2, "waver": 2.0, "ripple": 25, "speed": 4,
+    "duration": 0.18,
+    "pulses": { "count": 3, "duration": 0.065, "interval": 0.085 },
+    "nearFade": [3, 15],
+    "lights": { "intensity": 0.35, "range": 18, "max": 4 }
+  },
+  "muzzle": { "hideOriginal": true },
+  "impact": {
+    "hideOriginal": true,
+    "flash": { "size": 1.82, "grow": 1.8, "color": "#40f24d", "time": 0.15 },
+    "light": { "color": "#40f24d", "range": 10, "intensity": 0.8, "time": 0.25 },
+    "sparks": { "count": 14, "speed": 9, "size": 0.12, "life": 0.45, "spread": 75, "color": "#ffffffe0", "endColor": "#40f24d00" }
+  }
+}

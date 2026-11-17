@@ -50,6 +50,9 @@ namespace MW2.Formats
         public string SessionName = "";
         public int MaxPlayers = 8;
         public string Password = "";
+        /// <summary>Port addition: the active mods (ModCatalog.Fingerprint). The host refuses a player whose mods differ.
+        /// It is sent after the password in the hello; a hello without it means no mods.</summary>
+        public string ModSet = "";
         public string RefuseReason { get; private set; }
         public int Port => ((IPEndPoint)_udp.Client.LocalEndPoint).Port;
         public bool AcceptNewPlayers = true;
@@ -142,11 +145,17 @@ namespace MW2.Formats
                 _lastHello = _now;
                 var name = Encoding.ASCII.GetBytes(MyName ?? "");
                 var pass = Encoding.ASCII.GetBytes(Password);
-                var hello = Header(KindHello, 0, 0, 0, 2 + name.Length + pass.Length);
+                var mods = Encoding.UTF8.GetBytes(ModSet ?? "");
+                if (mods.Length > 0xffff) mods = Encoding.UTF8.GetBytes("too many mods");
+                var hello = Header(KindHello, 0, 0, 0, 2 + name.Length + pass.Length + 2 + mods.Length);
                 hello[HeaderSize] = (byte)name.Length;
                 hello[HeaderSize + 1] = (byte)pass.Length;
                 Buffer.BlockCopy(name, 0, hello, HeaderSize + 2, name.Length);
                 Buffer.BlockCopy(pass, 0, hello, HeaderSize + 2 + name.Length, pass.Length);
+                int at = HeaderSize + 2 + name.Length + pass.Length;
+                hello[at] = (byte)mods.Length;
+                hello[at + 1] = (byte)(mods.Length >> 8);
+                Buffer.BlockCopy(mods, 0, hello, at + 2, mods.Length);
                 Raw(hello, _hostEnd);
             }
             if (MyId == NoId) return;
@@ -210,7 +219,7 @@ namespace MW2.Formats
                     return;
                 case KindRefuse:
                     _joining = false;
-                    RefuseReason = Encoding.ASCII.GetString(d, HeaderSize, d.Length - HeaderSize);
+                    RefuseReason = Encoding.UTF8.GetString(d, HeaderSize, d.Length - HeaderSize);
                     return;
                 case KindBye:
                     Remove(from);
@@ -234,6 +243,13 @@ namespace MW2.Formats
             int nameLength = d[HeaderSize], passLength = d[HeaderSize + 1];
             string name = Encoding.ASCII.GetString(d, HeaderSize + 2, nameLength);
             string pass = Encoding.ASCII.GetString(d, HeaderSize + 2 + nameLength, passLength);
+            int at = HeaderSize + 2 + nameLength + passLength;
+            string mods = "";
+            if (at + 2 <= d.Length)
+            {
+                int modsLength = d[at] | (d[at + 1] << 8);
+                if (at + 2 + modsLength <= d.Length) mods = Encoding.UTF8.GetString(d, at + 2, modsLength);
+            }
             Peer existing = null;
             foreach (var p in _peers.Values) if (p.End != null && p.End.Equals(end)) existing = p;
             if (existing == null)
@@ -241,6 +257,9 @@ namespace MW2.Formats
                 // Texts: 0x10006330 reports these two refusals on the joining machine.
                 if (pass != Password) { Raw(Packet(KindRefuse, MyId, 0, Encoding.ASCII.GetBytes("Incorrect password!")), end); return; }
                 if (_peers.Count >= MaxPlayers || !AcceptNewPlayers) { Raw(Packet(KindRefuse, MyId, 0, Encoding.ASCII.GetBytes("Sorry, that game is full.")), end); return; }
+                // Port addition: every player of a game has the same mods.
+                string different = ModCatalog.Difference(ModSet, mods);
+                if (different != null) { Raw(Packet(KindRefuse, MyId, 0, Encoding.UTF8.GetBytes(different)), end); return; }
                 existing = new Peer { Id = _nextId++, Name = name, End = end, LastHeard = _now };
                 _peers[existing.Id] = existing;
                 _inbox.Enqueue((0, System(NetLobbyTags.AddPlayer, existing.Id)));
