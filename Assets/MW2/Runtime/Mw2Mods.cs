@@ -55,6 +55,8 @@ namespace MW2
         /// <summary>Reads the Mods folder and mods.json again.</summary>
         public static void Reload()
         {
+            Shell.ShellAnim.ResolveShape = Resolve;
+            Shell.ShellDatabase.ResolvePicture = Resolve;
             string settings = null;
             try { if (File.Exists(SettingsPath)) settings = File.ReadAllText(SettingsPath); }
             catch (Exception e) { Debug.LogWarning("MW2 mods: cannot read " + SettingsPath + ": " + e.Message); }

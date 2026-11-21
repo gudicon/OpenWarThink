@@ -119,14 +119,14 @@ namespace MW2
 
         string ControlsHint()
         {
-            if (_controlsMessage != null && Time.unscaledTime < _controlsMessageUntil) return "!" + _controlsMessage;
-            if (_capturing != null) return "!Press a key or mouse button (Esc cancels)";
+            if (_controlsMessage != null && Time.unscaledTime < _controlsMessageUntil) return "!" + Mw2Lang.Tr(_controlsMessage);
+            if (_capturing != null) return "!" + Mw2Lang.Tr("Press a key or mouse button (Esc cancels)");
             var page = _mainStack.Count > 0 ? _mainStack[_mainStack.Count - 1] : null;
             var item = page != null && page.Selected < page.Items.Count ? page.Items[page.Selected] : null;
             if (_controls != null && item != null && (item.BindAction != null || item.BindCommand != null))
             {
                 var others = _controls.Conflicts(item.BindAction, item.BindCommand);
-                if (others.Count > 0) return "!Same keys as " + string.Join(", ", others);
+                if (others.Count > 0) return "!" + Mw2Lang.Format("Same keys as %s", string.Join(", ", others.ConvertAll(Mw2Lang.Tr)));
                 return "Enter: add key   Bksp: remove";
             }
             return "";

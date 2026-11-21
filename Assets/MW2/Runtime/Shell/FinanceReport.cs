@@ -24,22 +24,22 @@ namespace MW2.Shell
                 return $"\\g{right:000}\\b{font.Width(money):000}{money}";
             }
             var b = new StringBuilder();
-            b.Append("\\lExpenses: ").Append($"\\g{right:000}\\b{large.Width("C-Bills"):000}C-Bills").Append("\\n\\n");
-            b.Append("Unit Upkeep:\\n");
-            b.Append("\\tBattleMech Maintenance:").Append(Amount(r.Maintenance, normal)).Append("\\n");
-            b.Append("\\tTechnician Salaries:").Append(Amount(r.TechnicianSalaries, normal)).Append("\\n");
-            b.Append("\\tTravel Costs:").Append(Amount(r.Travel, normal)).Append("\\n");
-            b.Append("\\tBroker Fees:").Append(Amount(r.BrokerFees, normal)).Append("\\n");
-            b.Append("\\tGuild Dues:").Append(Amount(r.GuildDues, normal)).Append("\\n");
-            if (career.UnitPilots.Count > 1) b.Append("\\nPilot Salaries:\\n");
+            b.Append(ShellFont.Tr("\\lExpenses: ")).Append($"\\g{right:000}\\b{large.Width("C-Bills"):000}" + ShellFont.Tr("C-Bills")).Append("\\n\\n");
+            b.Append(ShellFont.Tr("Unit Upkeep:") + "\\n");
+            b.Append(ShellFont.Tr("\\tBattleMech Maintenance:")).Append(Amount(r.Maintenance, normal)).Append("\\n");
+            b.Append(ShellFont.Tr("\\tTechnician Salaries:")).Append(Amount(r.TechnicianSalaries, normal)).Append("\\n");
+            b.Append(ShellFont.Tr("\\tTravel Costs:")).Append(Amount(r.Travel, normal)).Append("\\n");
+            b.Append(ShellFont.Tr("\\tBroker Fees:")).Append(Amount(r.BrokerFees, normal)).Append("\\n");
+            b.Append(ShellFont.Tr("\\tGuild Dues:")).Append(Amount(r.GuildDues, normal)).Append("\\n");
+            if (career.UnitPilots.Count > 1) b.Append("\\n" + ShellFont.Tr("Pilot Salaries:") + "\\n");
             foreach (var pilot in career.UnitPilots)
-                if (!pilot.Player) b.Append("\\t").Append(pilot.Name).Append(Amount(pilot.I32(0x3c), normal)).Append("\\n");
+                if (!pilot.Player) b.Append("\\t").Append(ShellFont.Tr(pilot.Name)).Append(Amount(pilot.I32(0x3c), normal)).Append("\\n");
             foreach (var tech in career.UnitTechs)
-                b.Append("\\tAeroTech: ").Append(tech.Name).Append(Amount(tech.I32(0x24), normal)).Append("\\n");
-            b.Append("\\nTotal Monthly Costs: ").Append(Amount(r.MonthlyCosts, normal)).Append("\\n\\n");
-            b.Append("\\lAvailable Funds: ").Append(Amount(r.Funds, large)).Append("\\n");
-            b.Append("\\lTotal Inventory Value: ").Append(Amount(r.InventoryValue, large)).Append("\\n\\n");
-            b.Append("\\lTotal Net Worth: ").Append(Amount(r.NetWorth, large)).Append("\\n\\n");
+                b.Append(ShellFont.Tr("\\tAeroTech: ")).Append(ShellFont.Tr(tech.Name)).Append(Amount(tech.I32(0x24), normal)).Append("\\n");
+            b.Append("\\n" + ShellFont.Tr("Total Monthly Costs: ")).Append(Amount(r.MonthlyCosts, normal)).Append("\\n\\n");
+            b.Append(ShellFont.Tr("\\lAvailable Funds: ")).Append(Amount(r.Funds, large)).Append("\\n");
+            b.Append(ShellFont.Tr("\\lTotal Inventory Value: ")).Append(Amount(r.InventoryValue, large)).Append("\\n\\n");
+            b.Append(ShellFont.Tr("\\lTotal Net Worth: ")).Append(Amount(r.NetWorth, large)).Append("\\n\\n");
             return b.ToString();
         }
 

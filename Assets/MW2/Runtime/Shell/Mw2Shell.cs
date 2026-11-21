@@ -209,12 +209,12 @@ namespace MW2.Shell
             CombatVariablesScreen.Load(this);   // the shell's mw2snd.cfg / mw2dif.cfg blocks (FUN_1002782a, FUN_10027871)
             InstantAction.Difficulty = CombatVariablesScreen.Difficulty;
             Menu.EnableMain(Career);        // ShellMain: FUN_100438f4
-            Font5 = new ShellFont(Db.Raw(5));
-            Font6 = new ShellFont(Db.Raw(6));
-            Font7 = new ShellFont(Db.Raw(7));
-            Font9 = new ShellFont(Db.Raw(9));
-            Font10 = new ShellFont(Db.Raw(10));
-            Font11 = new ShellFont(Db.Raw(11));
+            Font5 = new ShellFont(Db.Raw(5), "shell5");
+            Font6 = new ShellFont(Db.Raw(6), "shell6");
+            Font7 = new ShellFont(Db.Raw(7), "shell7");
+            Font9 = new ShellFont(Db.Raw(9), "shell9");
+            Font10 = new ShellFont(Db.Raw(10), "shell10");
+            Font11 = new ShellFont(Db.Raw(11), "shell11");
             _screen = new Texture2D(ShellSurface.Width, ShellSurface.Height, TextureFormat.RGBA32, false)
                 { filterMode = FilterMode.Point, wrapMode = TextureWrapMode.Clamp };
             _pixels = new Color32[ShellSurface.Width * ShellSurface.Height];
@@ -905,6 +905,7 @@ namespace MW2.Shell
         /// </summary>
         public void Dialog(string text, Action<int> done)
         {
+            text = ShellFont.Tr(text);
             var lines = new List<string>();
             int i = 0;
             while (i < text.Length && text[i] != '#')
@@ -1128,7 +1129,8 @@ namespace MW2.Shell
             for (int p = 0; p < Menu.Popups.Count; p++)
             {
                 var popup = Menu.Popups[p];
-                string title = popup.Text.Replace("&", "");
+                // A language mod translates the titles and items (with their "&" marks, as the table has them).
+                string title = ShellFont.Tr(popup.Text).Replace("&", "");
                 float w = GUI.skin.button.CalcSize(new GUIContent(title)).x + 8;
                 GUI.enabled = !popup.Grayed;
                 if (GUI.Button(new Rect(x, r.y + 1, w, h - 2), title)) _menuOpen = _menuOpen == p ? -1 : p;
@@ -1144,7 +1146,7 @@ namespace MW2.Shell
                     {
                         if (!item.Separator)
                         {
-                            string[] parts = item.Text.Replace("&", "").Split('\t');
+                            string[] parts = ShellFont.Tr(item.Text).Replace("&", "").Split('\t');
                             GUI.enabled = !item.Grayed && Array.IndexOf(PortedCommands, item.Id) >= 0;
                             var row = new Rect(x + 2, y + 2, iw - 4, ih);
                             if (GUI.Button(row, parts[0], GUI.skin.label))
@@ -1240,7 +1242,7 @@ namespace MW2.Shell
             float k = r.width / 640f * 1.75f;
             float w = (_dialogYesNo ? 208 : 224) * k, h = (_dialogYesNo ? 85 : 95) * k;
             var box = new Rect(r.x + (r.width - w) / 2, r.y + (r.height - h) / 2, w, h);
-            GUI.Box(box, "Mercenaries");
+            GUI.Box(box, ShellFont.Tr("Mercenaries"));
             float textX = (_dialogYesNo ? 62 : 50) * k;
             float[] rows = _dialogYesNo ? new[] { 15f, 26f, 37f } : new[] { 17f, 28f, 41f };
             for (int i = 0; i < 3; i++)
@@ -1248,10 +1250,10 @@ namespace MW2.Shell
                     GUI.Label(new Rect(box.x + textX, box.y + rows[i] * k + 8, w - textX, 12 * k), _dialogLines[i]);
             if (_dialogYesNo)
             {
-                if (GUI.Button(new Rect(box.x + 46 * k, box.y + 64 * k, 50 * k, 14 * k), "Yes")) CloseDialog(0);
-                if (GUI.Button(new Rect(box.x + 112 * k, box.y + 64 * k, 50 * k, 14 * k), "No")) CloseDialog(1);
+                if (GUI.Button(new Rect(box.x + 46 * k, box.y + 64 * k, 50 * k, 14 * k), ShellFont.Tr("Yes"))) CloseDialog(0);
+                if (GUI.Button(new Rect(box.x + 112 * k, box.y + 64 * k, 50 * k, 14 * k), ShellFont.Tr("No"))) CloseDialog(1);
             }
-            else if (GUI.Button(new Rect(box.x + 88 * k, box.y + 65 * k, 50 * k, 14 * k), "OK")) CloseDialog(0);
+            else if (GUI.Button(new Rect(box.x + 88 * k, box.y + 65 * k, 50 * k, 14 * k), ShellFont.Tr("OK"))) CloseDialog(0);
         }
     }
 

@@ -253,7 +253,7 @@ namespace MW2.Shell
         static ShellText DrawName(ShellItemList.Entry e)
         {
             string text;
-            if (_d.EquipmentTab) text = e.Data < 0 || e.Data > 0xb ? $"BAD EQUIP!! {e.Data}" : $"{Tables.EquipmentName(e.Data)}:";
+            if (_d.EquipmentTab) text = e.Data < 0 || e.Data > 0xb ? $"BAD EQUIP!! {e.Data}" : $"{ShellFont.Tr(Tables.EquipmentName(e.Data))}:";
             else text = Tables.WeaponName(e.Data);
             return Draw(text, e.X, e.Y, e.State == 1 ? _selected : e.Remap);
         }

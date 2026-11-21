@@ -260,7 +260,9 @@ namespace MW2.Shell
             }
             else s.Dialog($"Regular mode: Unknown mission outcome {c.StepType}#Ok", null);
             text += _d.Deaths(null);
-            _page0.Layout(ShellBriefing.Latin1(ShellBriefing.ExpandNames(System.Text.Encoding.ASCII.GetBytes(text), c)));
+            // FUN_100073f0 on the text form: the same escapes as the byte form for ASCII, and a language mod's
+            // translated labels keep their letters (the byte form would turn them into '?').
+            _page0.Layout(ShellBriefing.ExpandNames(text, c));
             switch (c.StepType)
             {
                 case 1:

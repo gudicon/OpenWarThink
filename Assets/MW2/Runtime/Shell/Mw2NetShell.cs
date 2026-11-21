@@ -245,20 +245,22 @@ namespace MW2.Shell
         {
             var lines = new List<string>();
             string Name(int i) => game.Net.PlayerName(game.Ids[i]) ?? game.Units[i]?.DisplayName ?? "";
-            if (game.WinnerIndex >= 0) lines.Add($"{Name(game.WinnerIndex)} successfully completed the mission!");
-            else lines.Add("This mission has not yet been completed.");
+            if (game.WinnerIndex >= 0) lines.Add(Mw2Lang.Format("%s successfully completed the mission!", Name(game.WinnerIndex)));
+            else lines.Add(Mw2Lang.Tr("This mission has not yet been completed."));
             for (int killer = 0; killer < game.Ids.Length; killer++)
                 for (int victim = 0; victim < game.Ids.Length; victim++)
                 {
                     int n = game.Kills[killer, victim];
                     if (killer == victim && n == 0) continue;
-                    lines.Add(n == 0 ? $"{Name(killer)} never killed {Name(victim)}."
-                        : n == 1 ? $"{Name(killer)} killed {Name(victim)} once."
-                        : $"{Name(killer)} killed {Name(victim)} {n} times.");
+                    lines.Add(n == 0 ? Mw2Lang.Format("%s never killed %s.", Name(killer), Name(victim))
+                        : n == 1 ? Mw2Lang.Format("%s killed %s once.", Name(killer), Name(victim))
+                        : Mw2Lang.Format("%s killed %s %d times.", Name(killer), Name(victim), n));
                 }
             for (int i = 0; i < game.Ids.Length; i++) lines.Add($"{Name(i)}: {game.Scores[i]}");
             return string.Join("\n", lines);
         }
+
+        static string T(string text) => Mw2Lang.Tr(text);
 
         void OnGUI()
         {
@@ -274,7 +276,7 @@ namespace MW2.Shell
                 case Screen.Crosslink: DrawCrosslink(); break;
                 case Screen.Rooms: DrawRooms(); break;
                 case Screen.Ready: DrawReady(); break;
-                case Screen.Loading: GUILayout.Label("Waiting for remote players..."); break;
+                case Screen.Loading: GUILayout.Label(T("Waiting for remote players...")); break;
                 case Screen.Scores: DrawScores(); break;
             }
             GUILayout.EndArea();
@@ -285,44 +287,44 @@ namespace MW2.Shell
 
         void DrawCrosslink()
         {
-            GUILayout.Label(" Establish System Crosslink");
-            GUILayout.Label(" Enter Your Callsign");
+            GUILayout.Label(T(" Establish System Crosslink"));
+            GUILayout.Label(T(" Enter Your Callsign"));
             _callsign = GUILayout.TextField(_callsign, 0x14);
-            if (GUILayout.Button("Select"))
+            if (GUILayout.Button(T("Select")))
             {
                 // FUN_10003ca0.
                 if (string.IsNullOrWhiteSpace(_callsign)) _status = "You must enter a callsign!";
                 else { _status = ""; _screen = Screen.Rooms; }
             }
-            GUILayout.Label(_status);
+            GUILayout.Label(T(_status));
         }
 
         void DrawRooms()
         {
-            GUILayout.Label("Pilot's Lounge");
-            GUILayout.Label(_status);
-            GUILayout.Label("This is the server's IP address field.");
+            GUILayout.Label(T("Pilot's Lounge"));
+            GUILayout.Label(T(_status));
+            GUILayout.Label(T("This is the server's IP address field."));
             _address = GUILayout.TextField(_address);
-            GUILayout.Label("Input Password");
+            GUILayout.Label(T("Input Password"));
             _password = GUILayout.TextField(_password);
-            if (GUILayout.Button("Join the currently selected room."))
+            if (GUILayout.Button(T("Join the currently selected room.")))
             {
                 if (IPAddress.TryParse(_address, out var ip)) JoinRoom(_callsign, new IPEndPoint(ip, NetTransport.DefaultPort), _password);
                 else _status = "You must first specify a machine to connect to.";
             }
             GUILayout.Space(8);
             _mission = Mathf.Clamp(_mission, 0, Mathf.Max(0, _missions.Count - 1));
-            GUILayout.Label(_missions.Count > 0 ? $"Mission: {_missions[_mission].Name} ({_missions[_mission].Prefix})" : "No missions");
+            GUILayout.Label(_missions.Count > 0 ? Mw2Lang.Format("Mission: %s (%s)", _missions[_mission].Name, _missions[_mission].Prefix) : T("No missions"));
             GUILayout.BeginHorizontal();
-            if (GUILayout.Button("Click to choose previous available mission.")) _mission = (_mission + _missions.Count - 1) % Math.Max(1, _missions.Count);
-            if (GUILayout.Button("Click to choose next available mission.")) _mission = (_mission + 1) % Math.Max(1, _missions.Count);
+            if (GUILayout.Button(T("Click to choose previous available mission."))) _mission = (_mission + _missions.Count - 1) % Math.Max(1, _missions.Count);
+            if (GUILayout.Button(T("Click to choose next available mission."))) _mission = (_mission + 1) % Math.Max(1, _missions.Count);
             GUILayout.EndHorizontal();
             if (_missions.Count > 0) _teamGame = _missions[_mission].Modes[0].Team != 0;
-            GUILayout.Label(_teamGame ? "Team Missions" : "Free for all");
+            GUILayout.Label(T(_teamGame ? "Team Missions" : "Free for all"));
             // FUN_1001c490: the host's choices (the screens of hostopts.c).
             bool Toggle(byte bit, string text)
             {
-                bool on = GUILayout.Toggle((_hostOptions & bit) != 0, text);
+                bool on = GUILayout.Toggle((_hostOptions & bit) != 0, T(text));
                 _hostOptions = (byte)(on ? _hostOptions | bit : _hostOptions & ~bit);
                 return on;
             }
@@ -335,11 +337,11 @@ namespace MW2.Shell
             Toggle(2, "Unlimited ammo");
             GUILayout.EndHorizontal();
             GUILayout.BeginHorizontal();
-            if (GUILayout.Button("Air temperature: " + new[] { "mission", "-50", "10", "70" }[_hostTemperature])) _hostTemperature = (byte)((_hostTemperature + 1) % 4);
-            if (GUILayout.Button("Gravity: " + (_hostGravity == 0 ? "mission" : (_hostGravity / 16f).ToString("0.00") + " G"))) _hostGravity = (byte)((_hostGravity + 8) % 40);
-            if (GUILayout.Button("Time: " + (_hostTimeOfDay == 0 ? "Std" : "Custom"))) SelectTimeOfDay((byte)(_hostTimeOfDay ^ 1));
+            if (GUILayout.Button(Mw2Lang.Format("Air temperature: %s", T(new[] { "mission", "-50", "10", "70" }[_hostTemperature])))) _hostTemperature = (byte)((_hostTemperature + 1) % 4);
+            if (GUILayout.Button(Mw2Lang.Format("Gravity: %s", _hostGravity == 0 ? T("mission") : (_hostGravity / 16f).ToString("0.00") + " G"))) _hostGravity = (byte)((_hostGravity + 8) % 40);
+            if (GUILayout.Button(Mw2Lang.Format("Time: %s", T(_hostTimeOfDay == 0 ? "Std" : "Custom")))) SelectTimeOfDay((byte)(_hostTimeOfDay ^ 1));
             GUILayout.EndHorizontal();
-            if (_missions.Count > 0 && GUILayout.Button("Host a game."))
+            if (_missions.Count > 0 && GUILayout.Button(T("Host a game.")))
             {
                 HostRoom(_callsign, NetTransport.DefaultPort, _mission, _teamGame, _missions[_mission].Modes[0].MaxPlayers, _password, _hostOptions);
                 _session.Room.Temperature = _hostTemperature;
@@ -350,39 +352,39 @@ namespace MW2.Shell
         void DrawReady()
         {
             if (_session == null) return;
-            GUILayout.Label(_net.MyId == NetTransport.NoId ? "Connecting..." : _net.SessionName);
+            GUILayout.Label(_net.MyId == NetTransport.NoId ? T("Connecting...") : _net.SessionName);
             var room = _session.Room;
             var mission = _missions.FirstOrDefault(m => string.Equals(m.Prefix, room.Mission, StringComparison.OrdinalIgnoreCase));
-            GUILayout.Label($"Mission: {(mission != null ? mission.Name : room.Mission)}  {(room.TeamGame ? "Team Missions" : "Free for all")}");
+            GUILayout.Label(Mw2Lang.Format("Mission: %s  %s", mission != null ? mission.Name : room.Mission, T(room.TeamGame ? "Team Missions" : "Free for all")));
             foreach (var p in room.Players)
             {
                 string mech = p.Chassis < _mechs.Items.Count ? NetMechTable.Mek(_mechs.Items[p.Chassis].Code, p.Variant) : "?";
-                GUILayout.Label($"{_net.PlayerName(p.Id)}  {mech}  {(room.TeamGame ? "Team " + (char)('A' + p.Team) : "")}  {((p.Flags & NetRoom.FlagReady) != 0 ? "Ready" : "")}");
+                GUILayout.Label($"{_net.PlayerName(p.Id)}  {mech}  {(room.TeamGame ? Mw2Lang.Format("Team %s", (char)('A' + p.Team)) : "")}  {((p.Flags & NetRoom.FlagReady) != 0 ? T("Ready") : "")}");
             }
             var chassis = _mechs.Items[Mathf.Clamp(_chassis, 0, _mechs.Items.Count - 1)];
-            GUILayout.Label($"'Mech: {chassis.Name} ({chassis.Tons} T)  {NetMechTable.Mek(chassis.Code, _variant)}");
+            GUILayout.Label(Mw2Lang.Format("'Mech: %s (%d T)  %s", chassis.Name, chassis.Tons, NetMechTable.Mek(chassis.Code, _variant)));
             GUILayout.BeginHorizontal();
-            if (GUILayout.Button("Click here to go to the previous 'Mech chassis.")) { int c = (_chassis + _mechs.Items.Count - 1) % _mechs.Items.Count; SelectMech(c, FirstVariant(c)); }
-            if (GUILayout.Button("Click here to go to the next 'Mech chassis.")) { int c = (_chassis + 1) % _mechs.Items.Count; SelectMech(c, FirstVariant(c)); }
-            if (GUILayout.Button("next configuration")) { var v = chassis.Variants; if (v.Count > 0) SelectMech(_chassis, v[(v.IndexOf(_variant) + 1) % v.Count]); }
+            if (GUILayout.Button(T("Click here to go to the previous 'Mech chassis."))) { int c = (_chassis + _mechs.Items.Count - 1) % _mechs.Items.Count; SelectMech(c, FirstVariant(c)); }
+            if (GUILayout.Button(T("Click here to go to the next 'Mech chassis."))) { int c = (_chassis + 1) % _mechs.Items.Count; SelectMech(c, FirstVariant(c)); }
+            if (GUILayout.Button(T("next configuration"))) { var v = chassis.Variants; if (v.Count > 0) SelectMech(_chassis, v[(v.IndexOf(_variant) + 1) % v.Count]); }
             GUILayout.EndHorizontal();
             int me = room.Find(_net.MyId);
             if (me >= 0)
             {
                 bool ready = (room.Players[me].Flags & NetRoom.FlagReady) != 0;
-                if (room.TeamGame && GUILayout.Button("Click here to change your clan allegiance")) _session.SetTeam(room.Players[me].Team ^ 1);
-                if (GUILayout.Button(ready ? "Launch (waiting)" : "Click here when you are ready to launch.")) _session.SetReady(!ready);
+                if (room.TeamGame && GUILayout.Button(T("Click here to change your clan allegiance"))) _session.SetTeam(room.Players[me].Team ^ 1);
+                if (GUILayout.Button(T(ready ? "Launch (waiting)" : "Click here when you are ready to launch."))) _session.SetReady(!ready);
             }
             _scroll = GUILayout.BeginScrollView(_scroll, GUILayout.Height(110));
             foreach (var line in _session.ChatLines) GUILayout.Label(line);
             GUILayout.EndScrollView();
             GUILayout.BeginHorizontal();
             _chat = GUILayout.TextField(_chat, 0x4f);
-            if (GUILayout.Button("Send", GUILayout.Width(60)) && _chat.Length > 0) { _session.Chat(_chat); _chat = ""; }
+            if (GUILayout.Button(T("Send"), GUILayout.Width(60)) && _chat.Length > 0) { _session.Chat(_chat); _chat = ""; }
             GUILayout.EndHorizontal();
-            if (GUILayout.Button("Close connection and restart.")) { Close(); _screen = Screen.Rooms; }
+            if (GUILayout.Button(T("Close connection and restart."))) { Close(); _screen = Screen.Rooms; }
             // FUN_10018e00.
-            if (GUILayout.Button("Click here to exit MercNet.")) Application.Quit();
+            if (GUILayout.Button(T("Click here to exit MercNet."))) Application.Quit();
         }
 
         int FirstVariant(int chassis)
@@ -394,7 +396,7 @@ namespace MW2.Shell
         void DrawScores()
         {
             GUILayout.Label(LastScores);
-            if (GUILayout.Button("Leave")) _screen = Screen.Rooms;
+            if (GUILayout.Button(T("Leave"))) _screen = Screen.Rooms;
         }
     }
 }

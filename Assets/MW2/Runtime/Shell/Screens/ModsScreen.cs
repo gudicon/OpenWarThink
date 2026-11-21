@@ -83,8 +83,62 @@ namespace MW2.Shell
         }
 
         static bool Option(string text, GUIStyle style = null, float width = 0) =>
-            width > 0 ? GUILayout.Button(text, style ?? _option, GUILayout.Width(width))
-                      : GUILayout.Button(text, style ?? _option, GUILayout.ExpandWidth(false));
+            width > 0 ? GUILayout.Button(Mw2Lang.Tr(text), style ?? _option, GUILayout.Width(width))
+                      : GUILayout.Button(Mw2Lang.Tr(text), style ?? _option, GUILayout.ExpandWidth(false));
+
+        // ---- language template ----
+
+        /// <summary>
+        /// LANGUAGE TEMPLATE: writes or updates the mod folder my-language with every text of the game to translate
+        /// (LangTemplate), adding the keys of the other active language mods and the texts noted in lang-missing.txt.
+        /// </summary>
+        static string WriteLanguageTemplate(Mw2Shell host, ModCatalog edit)
+        {
+            if (host.Data == null) return "The game's files are not loaded.";
+            string folder = Path.Combine(edit.Folder, LangTemplate.DefaultId);
+            try
+            {
+                var others = new List<(string, IEnumerable<string>)>();
+                foreach (var m in Mw2Mods.Catalog.Active)
+                {
+                    if (string.Equals(Path.GetFileName(m.Folder), LangTemplate.DefaultId, StringComparison.OrdinalIgnoreCase)) continue;
+                    foreach (string rel in m.Files)
+                    {
+                        string inner = rel.StartsWith(LangPack.Folder + "/", StringComparison.OrdinalIgnoreCase) ? rel.Substring(LangPack.Folder.Length + 1) : null;
+                        if (inner == null || inner.Contains("/") || !inner.EndsWith(".json", StringComparison.OrdinalIgnoreCase)) continue;
+                        try
+                        {
+                            string path = Path.Combine(m.Folder, rel.Replace('/', Path.DirectorySeparatorChar));
+                            if (MiniJson.Parse(File.ReadAllText(path), true) is Dictionary<string, object> root)
+                                others.Add((Path.GetFileNameWithoutExtension(inner), root.Keys));
+                        }
+                        catch (Exception e) when (e is MiniJson.Error || e is IOException || e is UnauthorizedAccessException) { }
+                    }
+                }
+                string[] missing = File.Exists(Mw2Lang.MissingPath) ? File.ReadAllLines(Mw2Lang.MissingPath) : null;
+                List<string> weapons = null;
+                try { weapons = WeaponTable.Get(host.GameFolder).ConvertAll(w => w.Name); }
+                catch (Exception e) when (e is IOException || e is UnauthorizedAccessException) { }
+                var r = LangTemplate.Write(folder, host.Data, host.Db, weapons, others, missing);
+                foreach (string p in r.Problems) Debug.LogWarning("MW2 language template: " + p);
+                string text = Mw2Lang.Format("Language template in %s: %d texts (%d new), %d briefings, %d news. Switch it on and play " +
+                                             "to note more texts, then press LANGUAGE TEMPLATE again.", folder, r.Texts, r.Added, r.Briefings, r.News);
+                if (r.Problems.Count > 0) text += " " + Mw2Lang.Format("%s (and more in the log)", r.Problems[0]);
+                if (host.Db != null)
+                {
+                    // The check of what is translated so far: pages, widths, letters.
+                    var check = LangReport.Check(LangReport.Load(Path.Combine(folder, LangPack.Folder)), host.Data, host.Db);
+                    LangReport.Write(Path.Combine(folder, LangReport.FileName), folder, check);
+                    text += " " + Mw2Lang.Format("Check: %d problems, %d letters the fonts lack (%s).", check.Problems.Count,
+                                                 check.Letters.Count, LangReport.FileName);
+                }
+                return text;
+            }
+            catch (Exception e) when (e is IOException || e is UnauthorizedAccessException)
+            {
+                return Mw2Lang.Format("Cannot write the language template to %s: %s", folder, e.Message);
+            }
+        }
 
         // ---- drawing ----
 
@@ -101,27 +155,29 @@ namespace MW2.Shell
                                 picture.width * 0.94f, picture.height * 0.96f);
             GUILayout.BeginArea(area);
 
-            var titleRect = GUILayoutUtility.GetRect(new GUIContent("MODS"), _title, GUILayout.ExpandWidth(true));
+            string title = Mw2Lang.Tr("MODS");
+            var titleRect = GUILayoutUtility.GetRect(new GUIContent(title), _title, GUILayout.ExpandWidth(true));
             float shadow = Mathf.Max(2f, _fontSize / 8f);
-            GUI.Label(new Rect(titleRect.x + shadow, titleRect.y + shadow, titleRect.width, titleRect.height), "MODS", _titleShadow);
-            GUI.Label(titleRect, "MODS", _title);
+            GUI.Label(new Rect(titleRect.x + shadow, titleRect.y + shadow, titleRect.width, titleRect.height), title, _titleShadow);
+            GUI.Label(titleRect, title, _title);
             GUILayout.Space(_fontSize * 0.5f);
-            GUILayout.Label("Folder:  " + _edit.Folder, _greyWrap);
-            GUILayout.Label("Click ON / OFF to switch a mod, UP / DOWN to change the order: a mod lower in the list wins when two " +
-                            "mods change the same file. ACCEPT applies the choice at once; TEST RANGE keeps it and opens a mission to try weapon effects in.", _greyWrap);
+            GUILayout.Label(Mw2Lang.Format("Folder:  %s", _edit.Folder), _greyWrap);
+            GUILayout.Label(Mw2Lang.Tr("Click ON / OFF to switch a mod, UP / DOWN to change the order: a mod lower in the list wins when two " +
+                            "mods change the same file. ACCEPT applies the choice at once; TEST RANGE keeps it and opens a mission to try weapon effects in."), _greyWrap);
             if (Mw2Mods.Translocated)
-                GUILayout.Label("macOS runs this app from a hidden copy, so it cannot see the Mods folder next to it. Quit, run " +
-                                "xattr -dr com.apple.quarantine MW2Mercs.app in Terminal and start the game again.", _redWrap);
-            if (_message != null) GUILayout.Label(_message, _redWrap);
+                GUILayout.Label(Mw2Lang.Tr("macOS runs this app from a hidden copy, so it cannot see the Mods folder next to it. Quit, run " +
+                                "xattr -dr com.apple.quarantine MW2Mercs.app in Terminal and start the game again."), _redWrap);
+            if (_message != null) GUILayout.Label(Mw2Lang.Tr(_message), _redWrap);
             GUILayout.Space(_fontSize * 0.5f);
 
             _scroll = GUILayout.BeginScrollView(_scroll, false, false, GUIStyle.none, GUI.skin.verticalScrollbar, GUIStyle.none);
             if (!_edit.FolderExists)
-                GUILayout.Label("There is no Mods folder yet. OPEN MODS FOLDER creates it; unpack each mod into its own folder there.", _greyWrap);
+                GUILayout.Label(Mw2Lang.Tr("There is no Mods folder yet. OPEN MODS FOLDER creates it; unpack each mod into its own folder there."), _greyWrap);
             else if (_edit.Mods.Count == 0)
-                GUILayout.Label("No mods in the folder. Unpack each mod into its own folder there.", _greyWrap);
+                GUILayout.Label(Mw2Lang.Tr("No mods in the folder. Unpack each mod into its own folder there."), _greyWrap);
             ModCatalog.Mod moveUp = null, moveDown = null;
-            float switchWidth = _option.CalcSize(new GUIContent("OFF")).x + _option.margin.right;
+            float switchWidth = Mathf.Max(_option.CalcSize(new GUIContent(Mw2Lang.Tr("OFF"))).x,
+                                          _option.CalcSize(new GUIContent(Mw2Lang.Tr("ON"))).x) + _option.margin.right;
             for (int i = 0; i < _edit.Mods.Count; i++)
             {
                 var m = _edit.Mods[i];
@@ -131,7 +187,7 @@ namespace MW2.Shell
                 else if (Option(m.Enabled ? "ON" : "OFF", m.Enabled ? _option : _optionGrey, switchWidth))
                     _edit.SetEnabled(m, !m.Enabled);
                 GUILayout.Label(m.Title, m.Active ? _white : _grey);
-                if (m.Author.Length > 0) GUILayout.Label("   by " + m.Author, _grey);
+                if (m.Author.Length > 0) GUILayout.Label(Mw2Lang.Format("   by %s", m.Author), _grey);
                 GUILayout.FlexibleSpace();
                 if (i > 0 && Option("UP")) moveUp = m;
                 if (i + 1 < _edit.Mods.Count && Option("DOWN")) moveDown = m;
@@ -140,11 +196,11 @@ namespace MW2.Shell
                 GUILayout.Space(switchWidth);
                 GUILayout.BeginVertical();
                 if (m.Description.Length > 0) GUILayout.Label(m.Description, _greyWrap);
-                if (m.Problem != null) GUILayout.Label(m.Problem, _redWrap);
+                if (m.Problem != null) GUILayout.Label(Mw2Lang.Tr(m.Problem), _redWrap);
                 else if (m.Incompatible != null)
-                    GUILayout.Label(m.Incompatible + (m.Forced ? " Turned on anyway: it may not work." : " Turned off; ON loads it anyway."), _redWrap);
+                    GUILayout.Label(Mw2Lang.Tr(m.Incompatible) + Mw2Lang.Tr(m.Forced ? " Turned on anyway: it may not work." : " Turned off; ON loads it anyway."), _redWrap);
                 else if (m.Files.Count > 0)
-                    GUILayout.Label($"{m.Files.Count} file{(m.Files.Count == 1 ? "" : "s")}", _grey);
+                    GUILayout.Label(Mw2Lang.Format(m.Files.Count == 1 ? "%d file" : "%d files", m.Files.Count), _grey);
                 GUILayout.EndVertical();
                 GUILayout.EndHorizontal();
             }
@@ -152,8 +208,8 @@ namespace MW2.Shell
             if (conflicts != null)
             {
                 GUILayout.Space(_fontSize);
-                GUILayout.Label("CONFLICTS", _white);
-                foreach (string line in conflicts) GUILayout.Label(line, _redWrap);
+                GUILayout.Label(Mw2Lang.Tr("CONFLICTS"), _white);
+                foreach (string line in conflicts) GUILayout.Label(Mw2Lang.Tr(line), _redWrap);
             }
             GUILayout.EndScrollView();
 
@@ -171,6 +227,11 @@ namespace MW2.Shell
                 // Keep the switches and order made here, read the folder again.
                 _edit = ModCatalog.Load(_edit.Folder, _edit.SaveSettings());
                 _message = null;
+            }
+            if (Option("LANGUAGE TEMPLATE"))
+            {
+                _message = WriteLanguageTemplate(host, _edit);
+                _edit = ModCatalog.Load(_edit.Folder, _edit.SaveSettings());
             }
             if (Option("TEST RANGE")) range = true;
             if (Option("ABORT")) abort = true;

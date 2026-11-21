@@ -86,8 +86,31 @@ namespace MW2
             go.transform.SetPositionAndRotation(point, rotation);
             go.transform.localScale = prefab.transform.localScale * look.Scale;
             if (!go.activeSelf) go.SetActive(true);
+            StartParticles(go, look);
             s_alive.Add(placed);
             return placed;
+        }
+
+        /// <summary>
+        /// A prefab whose particle systems all have Play On Awake off was started by a script of its pack, and scripts do
+        /// not come with a bundle: then every system that is not another one's sub-emitter is started here, as such a
+        /// script does, and the player is told once. A prefab with any system that plays on awake is left as it is.
+        /// </summary>
+        static void StartParticles(GameObject go, WeaponLook.PrefabLook look)
+        {
+            var systems = go.GetComponentsInChildren<ParticleSystem>(true);
+            if (systems.Length == 0) return;
+            foreach (var s in systems) if (s.main.playOnAwake) return;
+            var sub = new HashSet<ParticleSystem>();
+            foreach (var s in systems)
+                for (int i = 0; i < s.subEmitters.subEmittersCount; i++)
+                {
+                    var e = s.subEmitters.GetSubEmitterSystem(i);
+                    if (e != null) sub.Add(e);
+                }
+            foreach (var s in systems) if (!sub.Contains(s)) s.Play(false);
+            Report("play|" + look.Bundle + "|" + look.Asset,
+                   $"{look.Asset}: none of its particle systems has Play On Awake, so the game starts them (turn it on in the prefab to see the same in the Editor)", false);
         }
 
         internal static void Gone(Mw2ModPrefab p) => s_alive.Remove(p);
@@ -139,6 +162,10 @@ namespace MW2
         static void Clean(GameObject go, WeaponLook.PrefabLook look)
         {
             var removed = new SortedSet<string>(StringComparer.Ordinal);
+            // Scripts of the pack the prefab came from: the game has no such code, so Unity keeps an empty slot.
+            int lost = 0;
+            foreach (var c in go.GetComponentsInChildren<Component>(true)) if (c == null) lost++;
+            if (lost > 0) removed.Add(lost == 1 ? "1 script the game does not have" : lost + " scripts the game does not have");
             // Twice: a component another one needs goes only after that one is gone.
             for (int pass = 0; pass < 2; pass++)
                 foreach (var c in go.GetComponentsInChildren<Component>(true))
@@ -161,7 +188,7 @@ namespace MW2
                 }
                 UnityEngine.Object.DestroyImmediate(l);
             }
-            // Missing scripts (null components) cannot be listed by type; they never run.
+            // Missing scripts (null components) cannot be listed by type or taken off; they never run.
             if (removed.Count > 0)
                 Report("clean|" + look.Bundle + "|" + look.Asset,
                        $"{look.Asset}: only pictures and sound are used; taken off: {string.Join(", ", removed)}", false);

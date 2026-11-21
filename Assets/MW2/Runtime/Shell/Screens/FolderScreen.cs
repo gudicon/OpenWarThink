@@ -87,6 +87,7 @@ namespace MW2.Shell
 
         static void Title(string text)
         {
+            text = Mw2Lang.Tr(text);
             var r = GUILayoutUtility.GetRect(new GUIContent(text), _title, GUILayout.ExpandWidth(true));
             float shadow = Mathf.Max(2f, _fontSize / 8f);
             GUI.Label(new Rect(r.x + shadow, r.y + shadow, r.width, r.height), text, _titleShadow);
@@ -98,7 +99,7 @@ namespace MW2.Shell
         {
             GUI.SetNextControlName(name);
             // A fixed width keeps BROWSE in place however long the path is.
-            float browse = _option.CalcSize(new GUIContent("BROWSE")).x + _option.margin.left;
+            float browse = _option.CalcSize(new GUIContent(Mw2Lang.Tr("BROWSE"))).x + _option.margin.left;
             value = GUILayout.TextField(value ?? "", _field, GUILayout.Width(_areaWidth - browse - _field.margin.right));
             var r = GUILayoutUtility.GetLastRect();
             if (Event.current.type == EventType.Repaint) GUI.DrawTexture(new Rect(r.x, r.yMax, r.width, 1), _line);
@@ -127,7 +128,7 @@ namespace MW2.Shell
             Title("GAME FILES");
             float p = Mathf.Clamp01(s.Install.Progress);
             GUILayout.Space(_fontSize * 2);
-            GUILayout.Label($"Copying the game from the disc...  {p * 100f:0}%", _header);
+            GUILayout.Label(Mw2Lang.Format("Copying the game from the disc...  %d%", Mathf.RoundToInt(p * 100f)), _header);
             GUILayout.Space(_fontSize * 0.5f);
             var bar = GUILayoutUtility.GetRect(10, _fontSize, GUILayout.ExpandWidth(true));
             if (Event.current.type == EventType.Repaint)
@@ -139,8 +140,8 @@ namespace MW2.Shell
                 GUI.color = old;
             }
             GUILayout.Space(_fontSize * 0.5f);
-            GUILayout.Label("To " + s.Install.Target, _greyWrap);
-            GUILayout.Label("The disc is only read, and is not needed after the copy.", _grey);
+            GUILayout.Label(Mw2Lang.Format("To %s", s.Install.Target), _greyWrap);
+            GUILayout.Label(Mw2Lang.Tr("The disc is only read, and is not needed after the copy."), _grey);
         }
 
         static void DrawFields(Mw2Shell s)
@@ -150,30 +151,30 @@ namespace MW2.Shell
             if (enter) e.Use();
 
             Title("GAME FILES");
-            GUILayout.Label("OpenWarThink plays MechWarrior 2: Mercenaries from your own copy of the game.", _greyWrap);
+            GUILayout.Label(Mw2Lang.Tr("OpenWarThink plays MechWarrior 2: Mercenaries from your own copy of the game."), _greyWrap);
             string error = s.FolderError;
-            if (error != null && error != Mw2Shell.NoFolderYet) GUILayout.Label(error, _redWrap);
+            if (error != null && error != Mw2Shell.NoFolderYet) GUILayout.Label(Mw2Lang.Tr(error), _redWrap);
             GUILayout.Space(_fontSize);
 
-            GUILayout.Label("GAME FOLDER", _header);
-            GUILayout.Label("Your Mercenaries folder, or the Titanium CD drive: the game is then copied from the disc once.", _greyWrap);
+            GUILayout.Label(Mw2Lang.Tr("GAME FOLDER"), _header);
+            GUILayout.Label(Mw2Lang.Tr("Your Mercenaries folder, or the Titanium CD drive: the game is then copied from the disc once."), _greyWrap);
             GUILayout.BeginHorizontal();
             s.GameFolder = Field(s.GameFolder, "MW2.Folder");
-            if (Option("BROWSE")) StartBrowse(Browse.Folder, s.GameFolder);
+            if (Option(Mw2Lang.Tr("BROWSE"))) StartBrowse(Browse.Folder, s.GameFolder);
             GUILayout.EndHorizontal();
             GUILayout.Space(_fontSize);
 
-            GUILayout.Label("MISSION MUSIC", _header);
-            GUILayout.Label("Optional: the .cue file of a CD image of the game with the music tracks.", _greyWrap);
+            GUILayout.Label(Mw2Lang.Tr("MISSION MUSIC"), _header);
+            GUILayout.Label(Mw2Lang.Tr("Optional: the .cue file of a CD image of the game with the music tracks."), _greyWrap);
             GUILayout.BeginHorizontal();
             s.MusicField = Field(s.MusicField, "MW2.Music");
-            if (Option("BROWSE")) StartBrowse(Browse.Cue, s.MusicField);
+            if (Option(Mw2Lang.Tr("BROWSE"))) StartBrowse(Browse.Cue, s.MusicField);
             GUILayout.EndHorizontal();
 
             GUILayout.FlexibleSpace();
             GUILayout.BeginHorizontal();
-            if (Option("OPEN") || enter) { GUI.FocusControl(null); s.OpenFromSetup(); }
-            if (Option("QUIT")) Application.Quit();
+            if (Option(Mw2Lang.Tr("OPEN")) || enter) { GUI.FocusControl(null); s.OpenFromSetup(); }
+            if (Option(Mw2Lang.Tr("QUIT"))) Application.Quit();
             GUILayout.FlexibleSpace();
             GUILayout.EndHorizontal();
         }
@@ -298,18 +299,18 @@ namespace MW2.Shell
             if (e.type == EventType.KeyDown && e.keyCode == KeyCode.Escape) { e.Use(); _browse = Browse.None; return; }
 
             Title(_browse == Browse.Folder ? "GAME FOLDER" : "MISSION MUSIC");
-            GUILayout.Label(_browse == Browse.Folder
+            GUILayout.Label(Mw2Lang.Tr(_browse == Browse.Folder
                 ? "Open your Mercenaries folder or the Titanium CD drive and choose USE THIS FOLDER."
-                : "Find the .cue file of the CD image and click it.", _greyWrap);
+                : "Find the .cue file of the CD image and click it."), _greyWrap);
             GUILayout.Space(_fontSize * 0.5f);
-            GUILayout.Label(_dir ?? "Drives", _headerWrap);
-            if (_here != null) GUILayout.Label(_here, _red);
-            if (_listError != null) GUILayout.Label(_listError, _redWrap);
+            GUILayout.Label(_dir ?? Mw2Lang.Tr("Drives"), _headerWrap);
+            if (_here != null) GUILayout.Label(Mw2Lang.Tr(_here), _red);
+            if (_listError != null) GUILayout.Label(Mw2Lang.Tr(_listError), _redWrap);
             GUILayout.Space(_fontSize * 0.5f);
 
             string go = null, pick = null;
             _scroll = GUILayout.BeginScrollView(_scroll, false, false, GUIStyle.none, GUI.skin.verticalScrollbar, GUIStyle.none);
-            if (_dir != null && Option(".. (up)"))
+            if (_dir != null && Option(Mw2Lang.Tr(".. (up)")))
             {
                 var parent = Directory.GetParent(_dir);
                 go = parent == null ? "" : parent.FullName;
@@ -322,22 +323,22 @@ namespace MW2.Shell
                     if (entry.File) pick = entry.Path;
                     else go = entry.Path;
                 }
-                if (entry.Note != null) GUILayout.Label(entry.Note, _red);
+                if (entry.Note != null) GUILayout.Label(Mw2Lang.Tr(entry.Note), _red);
                 GUILayout.FlexibleSpace();
                 GUILayout.EndHorizontal();
             }
             if (_entries.Count == 0 && _listError == null)
-                GUILayout.Label(_browse == Browse.Cue ? "No folders or .cue files here." : "No folders here.", _grey);
+                GUILayout.Label(Mw2Lang.Tr(_browse == Browse.Cue ? "No folders or .cue files here." : "No folders here."), _grey);
             GUILayout.EndScrollView();
 
             GUILayout.Space(_fontSize * 0.5f);
             GUILayout.BeginHorizontal();
             if (_browse == Browse.Folder)
             {
-                if (_dir != null) { if (Option("USE THIS FOLDER")) pick = _dir; }
-                else GUILayout.Label("USE THIS FOLDER", new GUIStyle(_grey) { margin = _option.margin });
+                if (_dir != null) { if (Option(Mw2Lang.Tr("USE THIS FOLDER"))) pick = _dir; }
+                else GUILayout.Label(Mw2Lang.Tr("USE THIS FOLDER"), new GUIStyle(_grey) { margin = _option.margin });
             }
-            if (Option("CANCEL")) _browse = Browse.None;
+            if (Option(Mw2Lang.Tr("CANCEL"))) _browse = Browse.None;
             GUILayout.FlexibleSpace();
             GUILayout.EndHorizontal();
 

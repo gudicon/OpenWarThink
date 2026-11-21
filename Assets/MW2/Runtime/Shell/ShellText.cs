@@ -30,11 +30,17 @@ namespace MW2.Shell
         static readonly int[] TabStops = { 0, 36, 72, 108, 144, 180, 216, 252, 288, 324, 360, 396, 432, 468, 504, 540, 576, 612, 640 };
 
         public ShellText(ShellSurface surface, ShellFont font, string text, int x, int y, byte[] remap)
+            : this(surface, font, text, x, y, remap, true) { }
+
+        /// <summary><paramref name="translate"/> false (port addition): text the player types (a name being edited) is
+        /// drawn as it is, without a language mod's translation.</summary>
+        public ShellText(ShellSurface surface, ShellFont font, string text, int x, int y, byte[] remap, bool translate)
         {
             _surface = surface;
             Font = font;
+            if (translate) text = ShellFont.Tr(text);
             Text = text != null && text.StartsWith("~") ? text.Substring(1) : text ?? "";
-            Width = font.Width(Text);
+            Width = font.RawWidth(Text);
             Height = font.Height;
             X = text != null && text.StartsWith("~") ? x - Width / 2 : x;
             Y = y;
@@ -55,7 +61,7 @@ namespace MW2.Shell
             }
             else
             {
-                _surface.DrawString(Font, X, Y, Text, Remap);
+                _surface.DrawRawString(Font, X, Y, Text, Remap);
                 Done = true;
             }
         }

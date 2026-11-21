@@ -186,11 +186,15 @@ namespace MW2.Shell
             return w;
         }
 
-        /// <summary>FUN_100786cb 0x100786cb: a string from x, y; returns its width.</summary>
-        public int DrawString(ShellFont font, int x, int y, string s, byte[] remap)
+        /// <summary>FUN_100786cb 0x100786cb: a string from x, y, as shown (translated when a language mod has it); returns
+        /// its width.</summary>
+        public int DrawString(ShellFont font, int x, int y, string s, byte[] remap) => DrawRawString(font, x, y, ShellFont.Tr(s), remap);
+
+        /// <summary>FUN_100786cb 0x100786cb: a string from x, y as it is; returns its width.</summary>
+        public int DrawRawString(ShellFont font, int x, int y, string s, byte[] remap)
         {
             if (string.IsNullOrEmpty(s)) return 0;
-            int total = font.Width(s);
+            int total = font.RawWidth(s);
             if (total == 0 || (InDrawListPass && !Touches(x, y, total, font.Height))) return total;
             bool saved = InDrawListPass;
             InDrawListPass = false;

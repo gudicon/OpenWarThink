@@ -40,6 +40,19 @@ namespace MW2.Formats
             public readonly List<string> Files = new List<string>();
 
             public bool Active => Problem == null && Enabled && (Incompatible == null || Forced);
+
+            /// <summary>
+            /// A language mod: it has lang/ files, and all its files are text and letters (lang/), pictures of the shell
+            /// (shell/) or font samples the game never reads (font-samples/). It changes what the player sees, not the
+            /// game, so MercNet does not compare it (<see cref="Fingerprint"/>).
+            /// </summary>
+            public bool LanguageOnly =>
+                Files.Any(f => f.StartsWith(LangFolder, StringComparison.OrdinalIgnoreCase)) &&
+                Files.All(f => f.StartsWith(LangFolder, StringComparison.OrdinalIgnoreCase) ||
+                               f.StartsWith("shell/", StringComparison.OrdinalIgnoreCase) ||
+                               f.StartsWith("font-samples/", StringComparison.OrdinalIgnoreCase));
+
+            const string LangFolder = "lang/";
             public string Title => string.IsNullOrEmpty(Version) ? Name : $"{Name} {Version}";
         }
 
@@ -300,8 +313,9 @@ namespace MW2.Formats
 
         // ---- multiplayer ----
 
-        /// <summary>The active mods in order, "id@version;id@version": all players of a game must have the same.</summary>
-        public string Fingerprint() => string.Join(";", Active.Select(m => m.Id + "@" + m.Version));
+        /// <summary>The active mods in order, "id@version;id@version": all players of a game must have the same. Language
+        /// mods (<see cref="Mod.LanguageOnly"/>) are left out: players with different languages can play together.</summary>
+        public string Fingerprint() => string.Join(";", Active.Where(m => !m.LanguageOnly).Select(m => m.Id + "@" + m.Version));
 
         /// <summary>What differs between two fingerprints, in words, or null when they are the same.</summary>
         public static string Difference(string host, string joining)

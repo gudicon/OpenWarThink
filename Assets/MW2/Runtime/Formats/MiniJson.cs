@@ -18,9 +18,13 @@ namespace MW2.Formats
             public Error(string message) : base(message) { }
         }
 
-        public static object Parse(string text)
+        public static object Parse(string text) => Parse(text, false);
+
+        /// <summary>With <paramref name="exactKeys"/> object names are compared exactly (texts and letters of a language
+        /// file, where "Exit" and "EXIT" are different keys).</summary>
+        public static object Parse(string text, bool exactKeys)
         {
-            var p = new Reader(text ?? "");
+            var p = new Reader(text ?? "") { Keys = exactKeys ? StringComparer.Ordinal : StringComparer.OrdinalIgnoreCase };
             p.Space();
             var value = p.Value();
             p.Space();
@@ -32,6 +36,7 @@ namespace MW2.Formats
         {
             readonly string _s;
             int _i;
+            public StringComparer Keys = StringComparer.OrdinalIgnoreCase;
             public Reader(string s)
             {
                 _s = s;
@@ -86,7 +91,7 @@ namespace MW2.Formats
 
             Dictionary<string, object> Object()
             {
-                var o = new Dictionary<string, object>(StringComparer.OrdinalIgnoreCase);
+                var o = new Dictionary<string, object>(Keys);
                 _i++;
                 Space();
                 if (!End && _s[_i] == '}') { _i++; return o; }

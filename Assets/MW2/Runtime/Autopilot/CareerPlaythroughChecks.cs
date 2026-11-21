@@ -128,8 +128,8 @@ namespace MW2.Autopilot
             _shell.Db = new ShellDatabase(Path.Combine(Plan.gameFolder, "DATABASE.MW2"));
             _shell.Surface = new ShellSurface();
             _shell.Anims = new ShellAnimList(_shell.Surface, Path.Combine(Plan.gameFolder, "SMK"), _shell.gameObject);
-            _shell.Font7 = new ShellFont(_shell.Db.Raw(7));
-            _shell.Font11 = new ShellFont(_shell.Db.Raw(11));
+            _shell.Font7 = new ShellFont(_shell.Db.Raw(7), "shell7");
+            _shell.Font11 = new ShellFont(_shell.Db.Raw(11), "shell11");
             _shell.Menu = ShellMenu.From(_shell.Data.Tables.Defaults.Menu);
             int saveAt = Array.IndexOf(args, "--career-save");
             if (saveAt >= 0)

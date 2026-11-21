@@ -1,9 +1,10 @@
 // Builds the asset bundle of the example mod burn-lasers. Not part of the game: copy this file into Assets/MW2/Editor of
 // a copy of the project (the Player build script build_player.ps1 leaves one in <destination>/project) and run
 //   Unity.exe -batchmode -quit -projectPath <copy> -executeMethod MW2.EditorTools.MakeBurnLasers.Make
-//             --burn-output <mod>/effects/weapons -logFile <log>
+//             --burn-output <mod>/effects/weapons [--burn-platforms windows,mac,linux] -logFile <log>
 // It makes pictures, materials and prefabs in Assets/BurnLasers, builds them with Mw2ModBundleBuilder into
-// lasers.windows and removes the folder again.
+// lasers.windows (and lasers.mac / lasers.linux when asked, with that platform's build support installed) and
+// removes the folder again.
 //
 // The idea: a laser is light, nothing flies. The beam is there at once from the emitter to what it hits (reach "instant")
 // and stays while the game's shot is under way, i.e. while it burns: a thin core near white inside a faint coloured
@@ -39,7 +40,11 @@ namespace MW2.EditorTools
                 Save(Beam("BeamGreen", new Color(0.2f, 1f, 0.3f), 0.1f, 0.6f, 1f), "BeamGreen");
                 Save(Beam("BeamBlue", new Color(0.3f, 0.55f, 1f), 0.15f, 0.9f, 1.35f), "BeamBlue");
                 Save(Burn(), "Burn");
-                var written = Mw2ModBundleBuilder.Build(Folder, Path.GetFullPath(output), "lasers", new[] { ".windows" });
+                int on = Array.IndexOf(args, "--burn-platforms");
+                string[] endings = on >= 0 && on + 1 < args.Length
+                    ? Array.ConvertAll(args[on + 1].Split(','), p => "." + p.Trim().ToLowerInvariant())
+                    : new[] { ".windows" };
+                var written = Mw2ModBundleBuilder.Build(Folder, Path.GetFullPath(output), "lasers", endings);
                 Debug.Log("BURN_LASERS_DONE " + string.Join(" ", written));
             }
             finally { AssetDatabase.DeleteAsset(Folder); }

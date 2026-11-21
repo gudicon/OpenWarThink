@@ -253,6 +253,30 @@ namespace MW2.Formats
 
         // ---- gamekey.map commands ----
 
+        static readonly string[] Acronyms = { "MASC", "HUD", "MFD", "MFDS", "AMS", "HTAL", "A", "B", "C", "D", "E", "F" };
+
+        /// <summary>The label shown for a gamekey.map command: STARMATE_DEFEND -> "Lancemate defend" (port addition).</summary>
+        public static string CommandText(string name)
+        {
+            var words = name.Split('_').Where(w => w.Length > 0).Select(w =>
+                Acronyms.Contains(w) ? w : w.Substring(0, 1) + w.Substring(1).ToLowerInvariant()).ToList();
+            for (int i = 1; i < words.Count; i++) if (!Acronyms.Contains(words[i])) words[i] = words[i].ToLowerInvariant();
+            return string.Join(" ", words).Replace("Starmate", "Lancemate").Replace("Aerotechstrike", "Aerospace strike");
+        }
+
+        /// <summary>The group the controls screens list a gamekey.map command under (port addition).</summary>
+        public static string CommandGroup(string name)
+        {
+            if (name.StartsWith("STARMATE") || name.StartsWith("AEROTECH")) return "Lance commands";
+            if (name.StartsWith("THROTTLE") || name.Contains("REVERSE") || name.Contains("FEET")) return "Movement commands";
+            if (name.Contains("TARGET") || name.Contains("NAVPOINT")) return "Targeting commands";
+            if (name.Contains("WEAPON") || name.Contains("FIRE") || name.Contains("AMMO") || name.Contains("AMS")) return "Weapon commands";
+            if (name.Contains("MFD") || name.Contains("RADAR") || name.Contains("DISPLAY") || name.Contains("HUD") ||
+                name.Contains("VIEW") || name.Contains("COCKPIT") || name.Contains("COMPASS") || name.Contains("INFRARED") ||
+                name.Contains("HTAL") || name.Contains("OBJECTIVES") || name.Contains("WEAPONS")) return "Cockpit and display commands";
+            return "Mech and game commands";
+        }
+
         /// <summary>The command names of a gamekey.map, in file order, each once.</summary>
         public static List<string> CommandNames(string[] gameKeys)
         {

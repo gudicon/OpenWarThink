@@ -155,7 +155,7 @@ namespace MW2.Shell
                 var name = new ShellItemList.Entry
                 {
                     X = 0x172, Y = y, W = 200, Remap = _normal, Data = m.I32(0x2f0 + k * 8) / 100, Data2 = slot,
-                    Draw = e => Draw(_s.Font11, $"{_s.Data.Tables.WeaponName(e.Data)}:", e.X, e.Y, e.State == 1 ? _selected : e.Remap),
+                    Draw = e => Draw(_s.Font11, $"{ShellFont.Tr(_s.Data.Tables.WeaponName(e.Data))}:", e.X, e.Y, e.State == 1 ? _selected : e.Remap),
                     Click = e =>
                     {
                         _s.Career.Started = true;

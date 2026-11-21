@@ -50,8 +50,11 @@ namespace MW2.Shell
             if (storyLetter) _letter = new ShellAnim(shell.Anims, "mletter", 0, 0, 4, 1000);
             string news = shell.Career.News;
             if (news.StartsWith("None, why are you reading this?! Oops! Bug! Report me! Bzzzzzzzzz.")) news = MissingNews;
-            byte[] expanded = ShellBriefing.ExpandNames(Encoding.ASCII.GetBytes(news), shell.Career);
-            _pages = BuildPages(ShellBriefing.Latin1(expanded), shell.Font11, shell.Font7);
+            // Port addition: a language mod's whole text of this news (the same escapes, expanded by the text form).
+            string own = ShellBriefing.NewsTranslation(shell.Data, news);
+            string text = own != null ? ShellBriefing.ExpandNames(own, shell.Career)
+                : ShellBriefing.Latin1(ShellBriefing.ExpandNames(Encoding.ASCII.GetBytes(news), shell.Career));
+            _pages = BuildPages(text, shell.Font11, shell.Font7);
             foreach (var page in _pages)
             {
                 page.Create(shell.Surface, ShellSurface.MakeRemap(0x11), ShellSurface.MakeRemap(0x44));

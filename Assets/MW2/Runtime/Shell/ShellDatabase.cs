@@ -11,6 +11,9 @@ namespace MW2.Shell
     /// </summary>
     public sealed class ShellDatabase
     {
+        /// <summary>Optional port hook for unpacked shell/backgrounds/database/NN.pcx replacements.</summary>
+        public static Func<string, string> ResolvePicture;
+        readonly string _pictureFolder;
         readonly byte[] _d;
         readonly int[] _offset, _size;
 
@@ -18,6 +21,7 @@ namespace MW2.Shell
 
         public ShellDatabase(string path)
         {
+            _pictureFolder = "shell/backgrounds/" + Path.GetFileNameWithoutExtension(path).ToLowerInvariant() + "/";
             _d = File.ReadAllBytes(path);
             int n = BitConverter.ToInt32(_d, 0);
             _offset = new int[n];
@@ -42,6 +46,8 @@ namespace MW2.Shell
         public byte[] Unpack(int n)
         {
             if (n < 1 || n > Count) return null;
+            string replacement = ResolvePicture?.Invoke(_pictureFolder + n + ".pcx");
+            if (replacement != null) return File.ReadAllBytes(replacement);
             int p = _offset[n - 1], end = p + _size[n - 1];
             int size = BitConverter.ToInt32(_d, p);
             p += 4;

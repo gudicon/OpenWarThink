@@ -145,7 +145,8 @@ namespace MW2.Shell
                 p += length;
             }
             if (ran) return Read(career, data, $"RND{number}{name.Substring(4)}", -1, offer, tickSeed, newSeed, tick, rmgError);
-            offer.Text = text;
+            // Port addition: a language mod's whole text of this contract resource (generated ones keep theirs).
+            offer.Text = (loose ? null : ShellBriefing.Translated?.Invoke(name.ToUpperInvariant())) ?? text;
             return !loose;
         }
 

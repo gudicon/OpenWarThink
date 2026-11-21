@@ -157,20 +157,21 @@ namespace MW2.Shell
                                 picture.width * 0.94f, picture.height * 0.96f);
             GUILayout.BeginArea(area);
 
-            var titleRect = GUILayoutUtility.GetRect(new GUIContent("COCKPIT CONTROLS"), _title, GUILayout.ExpandWidth(true));
+            string title = Mw2Lang.Tr("COCKPIT CONTROLS");
+            var titleRect = GUILayoutUtility.GetRect(new GUIContent(title), _title, GUILayout.ExpandWidth(true));
             float shadow = Mathf.Max(2f, _fontSize / 8f);
-            GUI.Label(new Rect(titleRect.x + shadow, titleRect.y + shadow, titleRect.width, titleRect.height), "COCKPIT CONTROLS", _titleShadow);
-            GUI.Label(titleRect, "COCKPIT CONTROLS", _title);
+            GUI.Label(new Rect(titleRect.x + shadow, titleRect.y + shadow, titleRect.width, titleRect.height), title, _titleShadow);
+            GUI.Label(titleRect, title, _title);
             GUILayout.Space(_fontSize * 0.5f);
-            GUILayout.Label("Current Config:  " + (_editor.Changes().Actions.Count + _editor.Changes().Commands.Count == 0 ? "Default Config" : "Custom Config"), _grey);
-            GUILayout.Label("Click ADD KEY and press a key or mouse button; click a key to remove it. Esc cancels. " +
-                            "Saved to " + Mw2Controls.FileName + "; the game's map files are not changed. In a mission: Esc, Cockpit Controls.", _greyWrap);
-            if (_message != null) GUILayout.Label(_message, _red);
+            GUILayout.Label(Mw2Lang.Format("Current Config:  %s", Mw2Lang.Tr(_editor.Changes().Actions.Count + _editor.Changes().Commands.Count == 0 ? "Default Config" : "Custom Config")), _grey);
+            GUILayout.Label(Mw2Lang.Format("Click ADD KEY and press a key or mouse button; click a key to remove it. Esc cancels. " +
+                            "Saved to %s; the game's map files are not changed. In a mission: Esc, Cockpit Controls.", Mw2Controls.FileName), _greyWrap);
+            if (_message != null) GUILayout.Label(Mw2Lang.Tr(_message), _red);
             GUILayout.Space(_fontSize * 0.5f);
 
             if (_editor.Shipped == null)
             {
-                if (Option("ABORT", _option)) Close(false);
+                if (Option(Mw2Lang.Tr("ABORT"), _option)) Close(false);
                 GUILayout.EndArea();
                 return;
             }
@@ -180,37 +181,37 @@ namespace MW2.Shell
             foreach (var a in ControlBindings.Actions)
             {
                 if (a.Group != group) { group = a.Group; Header(group); }
-                Row(a.Label, a.Id, null);
+                Row(Mw2Lang.Tr(a.Label), a.Id, null);
             }
             string commandGroup = null;
             foreach (string c in _editor.Commands)
             {
                 string g = ControlsEditor.CommandGroup(c);
                 if (g != commandGroup) { commandGroup = g; Header(g); }
-                Row(ControlsEditor.CommandText(c), null, c);
+                Row(Mw2Lang.Tr(ControlsEditor.CommandText(c)), null, c);
             }
             GUILayout.EndScrollView();
 
             GUILayout.Space(_fontSize * 0.5f);
             GUILayout.BeginHorizontal();
             GUILayout.FlexibleSpace();
-            GUILayout.Label("WHITE = Selectable Option", _legendWhite);
+            GUILayout.Label(Mw2Lang.Tr("WHITE = Selectable Option"), _legendWhite);
             GUILayout.Space(_fontSize * 2);
-            GUILayout.Label("RED = Selected Option", _legendRed);
+            GUILayout.Label(Mw2Lang.Tr("RED = Selected Option"), _legendRed);
             GUILayout.Space(_fontSize * 2);
-            GUILayout.Label("GREY = Unselectable", _legendGrey);
+            GUILayout.Label(Mw2Lang.Tr("GREY = Unselectable"), _legendGrey);
             GUILayout.FlexibleSpace();
             GUILayout.EndHorizontal();
             GUILayout.Space(_fontSize * 0.5f);
             GUILayout.BeginHorizontal();
-            if (Option("ACCEPT", _option)) { StopCapture(); Close(true); }
-            if (Option("RESTORE DEFAULTS", _option))
+            if (Option(Mw2Lang.Tr("ACCEPT"), _option)) { StopCapture(); Close(true); }
+            if (Option(Mw2Lang.Tr("RESTORE DEFAULTS"), _option))
             {
                 StopCapture();
                 _editor.RestoreAll();
                 _message = "All bindings restored to the game's defaults. ACCEPT to keep them.";
             }
-            if (Option("ABORT", _option)) { StopCapture(); Close(false); }
+            if (Option(Mw2Lang.Tr("ABORT"), _option)) { StopCapture(); Close(false); }
             GUILayout.FlexibleSpace();
             GUILayout.EndHorizontal();
             GUILayout.EndArea();
@@ -220,7 +221,7 @@ namespace MW2.Shell
         static void Header(string text)
         {
             GUILayout.Space(_fontSize * 0.6f);
-            GUILayout.Label(text.ToUpperInvariant(), _header);
+            GUILayout.Label(Mw2Lang.Tr(text.ToUpperInvariant()), _header);
         }
 
         static void Row(string label, string action, string command)
@@ -240,7 +241,7 @@ namespace MW2.Shell
                     if (Option(_editor.CodeText(codes[i]), _option)) { _editor.RemoveCode(command, i); break; }
             }
             bool capturing = action != null ? _captureAction == action : _captureCommand == command;
-            var content = new GUIContent(!capturing ? "ADD KEY" : action != null ? "PRESS A KEY (or click here for Mouse left)" : "PRESS A KEY");
+            var content = new GUIContent(Mw2Lang.Tr(!capturing ? "ADD KEY" : action != null ? "PRESS A KEY (or click here for Mouse left)" : "PRESS A KEY"));
             var style = capturing ? _optionRed : _option;
             Rect r = GUILayoutUtility.GetRect(content, style, GUILayout.ExpandWidth(false));
             var ev = Event.current;
@@ -257,14 +258,14 @@ namespace MW2.Shell
             }
             GUILayout.FlexibleSpace();
             bool changed = action != null ? _editor.ActionChanged(action) : _editor.CommandChanged(command);
-            if (changed && Option("DEFAULT", _option))
+            if (changed && Option(Mw2Lang.Tr("DEFAULT"), _option))
             {
                 if (action != null) _editor.ResetAction(action);
                 else _editor.ResetCommand(command);
             }
             GUILayout.EndHorizontal();
             var others = _editor.Conflicts(action, command);
-            if (others.Count > 0) GUILayout.Label("      Same keys as: " + string.Join(", ", others), _red);
+            if (others.Count > 0) GUILayout.Label(Mw2Lang.Format("      Same keys as: %s", string.Join(", ", others.ConvertAll(Mw2Lang.Tr))), _red);
         }
     }
 }

@@ -382,8 +382,8 @@ namespace MW2.Shell
         {
             var r = _rows[e];
             string text;
-            if (_m.Tab == 5) text = r.Index < 0 || r.Index > 0xb ? $"BAD EQUIP!! {r.Index}" : Tables.EquipmentName(r.Index) + ":";
-            else text = Tables.WeaponName(r.Index) + ":";
+            if (_m.Tab == 5) text = r.Index < 0 || r.Index > 0xb ? $"BAD EQUIP!! {r.Index}" : ShellFont.Tr(Tables.EquipmentName(r.Index)) + ":";
+            else text = ShellFont.Tr(Tables.WeaponName(r.Index)) + ":";
             return Draw(_s.Font11, text, e.X, e.Y, e.State == 1 ? _bright : e.Remap);
         }
 
@@ -1026,7 +1026,8 @@ namespace MW2.Shell
         static void ShowEdit()
         {
             _editText?.Hide();
-            _editText = Draw(_s.Font6, _edited + "_", 0x1b, 0x3f, _bright);
+            _editText = new ShellText(_s.Surface, _s.Font6, _edited + "_", 0x1b, 0x3f, _bright, false);
+            _editText.Show();
         }
 
         static void EditTick()

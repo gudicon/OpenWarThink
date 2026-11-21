@@ -15,6 +15,8 @@ namespace MW2.Shell
     /// </summary>
     public sealed class ShellAnim
     {
+        /// <summary>Optional port hook: resolves a mod's shell/shapes path, or returns null for the original.</summary>
+        public static System.Func<string, string> ResolveShape;
         public readonly string Name;
         public int X, Y;            // +0x110, +0x114
         int _oldX, _oldY;           // +0x120, +0x124
@@ -61,7 +63,8 @@ namespace MW2.Shell
         /// <summary>FUN_10001b4b: SHP frames; the size is the largest frame size + 1.</summary>
         bool LoadShape(string folder)
         {
-            string path = Path.Combine(folder, Name + ".shp");
+            // Port extension: a mod may replace every state of a shell button together.
+            string path = ResolveShape?.Invoke("shell/shapes/" + Name + ".shp") ?? Path.Combine(folder, Name + ".shp");
             if (!File.Exists(path)) return false;
             byte[] d = File.ReadAllBytes(path);
             _frames = Shape.DecodeFrames(d);

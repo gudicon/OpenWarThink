@@ -62,10 +62,10 @@ namespace MW2.Shell
         {
             _pilotText?.Hide(); _unitText?.Hide();
             _pilotText = new ShellText(_s.Surface, _s.Font6, _pilot + (_unitStage ? "" : "_"), 330, 312,
-                _unitStage ? FinalRemap : EditingRemap);
+                _unitStage ? FinalRemap : EditingRemap, false);
             _pilotText.Show(0);
             _unitText = new ShellText(_s.Surface, _s.Font6, _unit + (_unitStage ? "_" : ""), 330, 350,
-                _unitStage ? EditingRemap : FinalRemap);
+                _unitStage ? EditingRemap : FinalRemap, false);
             _unitText.Show(0);
         }
 

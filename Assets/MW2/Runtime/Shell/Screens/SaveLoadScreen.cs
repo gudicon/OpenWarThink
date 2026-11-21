@@ -348,7 +348,7 @@ namespace MW2.Shell
         static void ShowEdit()
         {
             _editText?.Hide();
-            _editText = new ShellText(_s.Surface, _s.Font6, _edited + "_", 0x2a, _selected * 0x23 + 0x5c, _bright);
+            _editText = new ShellText(_s.Surface, _s.Font6, _edited + "_", 0x2a, _selected * 0x23 + 0x5c, _bright, false);
             _editText.Show();
         }
 

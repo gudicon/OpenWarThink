@@ -189,7 +189,7 @@ namespace MW2.Shell
                             more++;
                             Mark(m, s2, j2, c2, seen);
                         }
-                    if (kind == 0) return $"{more + 1} {_t.WeaponName(idx)}";
+                    if (kind == 0) return $"{more + 1} {ShellFont.Tr(_t.WeaponName(idx))}";
                     return more + 1 == 1 ? $"1 ton {_t.WeaponName(idx)} Ammo" : $"{more + 1} tons {_t.WeaponName(idx)} Ammo";
                 }
             return null;

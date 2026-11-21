@@ -48,6 +48,13 @@ namespace MW2
                     _units.Add((group, 4, 0));
                     continue;
                 }
+                // Keep the cockpit representation above; all external units, including wrecks,
+                // use REPR1 at every distance while this mod rule is active.
+                if (Mw2ModRules.Current.MaxMechDetail)
+                {
+                    _units.Add((group, 0, 0));
+                    continue;
+                }
                 // 0x1001f099: a destroyed unit (gp +0x14 & 2) keeps index 1, the player's own 0.
                 if (group.TryGetComponent<Mw2MechCombat>(out var dead) && dead.Destroyed)
                 {

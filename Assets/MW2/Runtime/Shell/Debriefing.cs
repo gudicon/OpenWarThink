@@ -71,8 +71,8 @@ namespace MW2.Shell
             }
             MsvcQsort(rows, Compare);
             var text = new StringBuilder();
-            string header = regular ? "Reward" : "";
-            text.Append($"Time\\g040Type\\g110Objective\\g400Status{Column(header)}\\n");
+            string header = regular ? ShellFont.Tr("Reward") : "";
+            text.Append($"{ShellFont.Tr("Time")}\\g040{ShellFont.Tr("Type")}\\g110{ShellFont.Tr("Objective")}\\g400{ShellFont.Tr("Status")}{Column(header)}\\n");
             for (int k = 0; k < rows.Count; k++)
             {
                 var o = report.Objective(rows[k]);
@@ -97,9 +97,9 @@ namespace MW2.Shell
                     default: type = "Unknown"; pay = 0; break;
                 }
                 if (pay >= 0) reward = Column(regular ? Money(pay) : "");
-                string status = o.complete ? "Successful" : "Failed";
+                string status = ShellFont.Tr(o.complete ? "Successful" : "Failed");
                 string time = o.fieldA5 < 0 ? "DNF" : $"{o.fieldA5 / 60 % 60:00}:{o.fieldA5 % 60:00}";
-                text.Append($"{time}\\g040{type}\\g110{Collapse(o.text)}{reward}\\g400{status}");
+                text.Append($"{time}\\g040{ShellFont.Tr(type)}\\g110{ShellFont.Tr(Collapse(o.text))}{reward}\\g400{status}");
                 if (k < rows.Count - 1) text.Append("\\n");
                 else if (kills > 0) text.Append("\\n");
             }
@@ -107,13 +107,13 @@ namespace MW2.Shell
             {
                 if (kills > 0)
                 {
-                    string label = kills == 1 ? "Cash bounty for 1 confirmed kill" : $"Cash bounty for {kills} confirmed kills";
+                    string label = ShellFont.Tr(kills == 1 ? "Cash bounty for 1 confirmed kill" : $"Cash bounty for {kills} confirmed kills");
                     int bounty = kills * _c.BountyPay;
                     Income += bounty;
                     text.Append($"\\n\\g110{label}{Column(Money(bounty))}");
                 }
             }
-            else text.Append($"\\n\\n\\g110Total confirmed kills: {kills}");
+            else text.Append("\\n\\n\\g110" + ShellFont.Tr($"Total confirmed kills: {kills}"));
             return text.ToString();
         }
 
@@ -188,13 +188,13 @@ namespace MW2.Shell
         public string Funds()
         {
             var text = new StringBuilder();
-            text.Append($"Funds: {Column(Money(_c.Funds))}\\n");
+            text.Append($"{ShellFont.Tr("Funds: ")}{Column(Money(_c.Funds))}\\n");
             Income += Compensation;
-            text.Append($"Contract compensation: {Column(Money(Compensation))}\\n");
-            text.Append($"Total Income: {Column(Money(Income))}\\n");
-            text.Append($"Total expenses:  {Column(Money(-_c.UnitExpenses(false)))}\\n");
+            text.Append($"{ShellFont.Tr("Contract compensation: ")}{Column(Money(Compensation))}\\n");
+            text.Append($"{ShellFont.Tr("Total Income: ")}{Column(Money(Income))}\\n");
+            text.Append($"{ShellFont.Tr("Total expenses:  ")}{Column(Money(-_c.UnitExpenses(false)))}\\n");
             text.Append($"{Column("--------------")}\\n");
-            text.Append($"Balance: {Column(Money(_c.Funds + Income - _c.UnitExpenses(false)))}\\n");
+            text.Append($"{ShellFont.Tr("Balance: ")}{Column(Money(_c.Funds + Income - _c.UnitExpenses(false)))}\\n");
             return text.ToString();
         }
 
@@ -226,7 +226,7 @@ namespace MW2.Shell
             {
                 if (pilot.Player) continue;
                 var mech = _c.UnitMechs.Find(m => m.PilotId == pilot.Id);
-                if (mech != null && mech.Destroyed) text.Append($"{pilot.Name} died in battle losing a {MechName(mech)}\\n");
+                if (mech != null && mech.Destroyed) text.Append(ShellFont.Tr($"{pilot.Name} died in battle losing a {MechName(mech)}") + "\\n");
             }
             foreach (var tech in _c.UnitTechs)
             {
@@ -235,7 +235,7 @@ namespace MW2.Shell
                 if (mech != null && mech.Destroyed)
                 {
                     tech.Data[0x5d] = 1;
-                    text.Append($"{tech.Name} died in battle losing a {MechName(mech)} aerotech\\n");
+                    text.Append(ShellFont.Tr($"{tech.Name} died in battle losing a {MechName(mech)} aerotech") + "\\n");
                 }
             }
             return text.ToString();
@@ -248,8 +248,8 @@ namespace MW2.Shell
         public string SalvageNote(bool salvageFile, bool noOpportunity, int salvageCount)
         {
             if (!salvageFile || _c.Mode != 1) return "";
-            if (noOpportunity) return "\\nNo opportunity for salvage was available.\\n";
-            return salvageCount == 0 ? "\\nNo mechs were salvaged.\\n" : "";
+            if (noOpportunity) return "\\n" + ShellFont.Tr("No opportunity for salvage was available.") + "\\n";
+            return salvageCount == 0 ? "\\n" + ShellFont.Tr("No mechs were salvaged.") + "\\n" : "";
         }
 
         /// <summary>

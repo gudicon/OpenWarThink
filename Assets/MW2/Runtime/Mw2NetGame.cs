@@ -443,11 +443,11 @@ namespace MW2
         string _chatText = "";
         void OnGUI()
         {
-            if (WaitingToRegenerate) GUI.Label(new Rect(20, 60, 600, 24), "Press SPACEBAR to regenerate, or ESC to exit");
-            if (!Started) GUI.Label(new Rect(20, 60, 600, 24), "Waiting for remote players...");
+            if (WaitingToRegenerate) GUI.Label(new Rect(20, 60, 600, 24), Mw2Lang.Tr("Press SPACEBAR to regenerate, or ESC to exit"));
+            if (!Started) GUI.Label(new Rect(20, 60, 600, 24), Mw2Lang.Tr("Waiting for remote players..."));
             if (Event.current.type == EventType.KeyDown && Event.current.keyCode == KeyCode.Return && !_chatOpen) { _chatOpen = true; Event.current.Use(); }
             if (!_chatOpen) return;
-            GUI.Label(new Rect(20, 84, 600, 24), "Communication  [Enter] Send to all, [Esc] to abort");
+            GUI.Label(new Rect(20, 84, 600, 24), Mw2Lang.Tr("Communication  [Enter] Send to all, [Esc] to abort"));
             GUI.SetNextControlName("mw2chat");
             _chatText = GUI.TextField(new Rect(20, 108, 400, 24), _chatText, 0x27);
             GUI.FocusControl("mw2chat");

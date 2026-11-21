@@ -291,12 +291,27 @@ namespace MW2
         void DrawText(string text, Vector2 at, int colorIndex)
         {
             if (FontAtlas == null || GlyphX == null) return;
+            text = Mw2Lang.Tr(text);
             var old = GUI.color;
             GUI.color = Pal(colorIndex);
             float x = at.x;
-            foreach (char ch in text)
+            foreach (char letter in text)
             {
-                if (ch >= GlyphWidth.Length) continue;
+                char ch = letter;
+                if (ch >= GlyphWidth.Length)
+                {
+                    // Port addition: a letter of a language mod, from its own atlas, else its plain letter.
+                    var extra = Mw2Lang.Hud("BASE6X76", FontHeight);
+                    if (extra != null && extra.Glyphs.TryGetValue(ch, out var g))
+                    {
+                        var guv = new Rect(g.X / (float)extra.Atlas.width, 0, g.W / (float)extra.Atlas.width, 1);
+                        GUI.DrawTextureWithTexCoords(new Rect(x, at.y, g.W * Px, FontHeight * Py), extra.Atlas, guv);
+                        x += g.W * Px;
+                        continue;
+                    }
+                    ch = LangPack.BaseLetter(ch);
+                    if (ch == 0 || ch >= GlyphWidth.Length) continue;
+                }
                 int w = GlyphWidth[ch];
                 if (w <= 0) continue;
                 var uv = new Rect(GlyphX[ch] / (float)FontAtlas.width, 0, w / (float)FontAtlas.width, 1);
@@ -309,7 +324,13 @@ namespace MW2
         float TextWidth(string text)
         {
             float w = 0;
-            if (GlyphWidth != null) foreach (char ch in text) if (ch < GlyphWidth.Length) w += GlyphWidth[ch];
+            text = Mw2Lang.Tr(text);
+            var extra = Mw2Lang.Hud("BASE6X76", FontHeight);
+            if (GlyphWidth != null)
+                foreach (char ch in text)
+                    if (ch < GlyphWidth.Length) w += GlyphWidth[ch];
+                    else if (extra != null && extra.Glyphs.TryGetValue(ch, out var g)) w += g.W;
+                    else if (LangPack.BaseLetter(ch) is char b && b != 0 && b < GlyphWidth.Length) w += GlyphWidth[b];
             return w * Px;
         }
 

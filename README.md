@@ -40,7 +40,7 @@ Work in progress. What works today, with your own copy of the game:
 - the Mercenaries shell: career, contracts, finances, MechLab, repair, salvage, saving and loading,
   Instant Action and random missions;
 - MercNet multiplayer over a local network;
-- mods (an addition of the port): weapon looks, mech destruction explosions and optional fixes, from a `Mods`
+- mods (an addition of the port): weapon looks, mech destruction explosions, translations and optional fixes, from a `Mods`
   folder next to the game, with a test range to try them (see [Mods](#mods));
 - Windows (64-bit) and macOS 12+ (Intel and Apple silicon).
 
@@ -161,10 +161,15 @@ What a mod can change today:
   or a family; from JSON alone (beams, flashes, sparks, lights) or with prefabs from a Unity asset bundle;
 - **mech destruction** (`effects/mechs`): the explosion of a destroyed mech, the bursts on the wreck, a blown-off
   section and a wreck breaking apart, for one model, a weight class or every unit;
+- **language** (`lang`): the game's text in another language: shell, briefings, contracts, news, dossiers,
+  cockpit messages and the port's screens, with extra letters for the game's fonts. **LANGUAGE TEMPLATE** on the
+  Mods screen writes every text to translate from your copy of the game and checks the translation's pages; see
+  [Translating the game](examples/mods/TRANSLATING.md);
 - **fixes** (`rules/fixes.json`): `fixInstantShots` makes every shot fly the whole way (in the original every second
-  shot at a target that stands still hits at once). A fix changes the game, so in MercNet every player needs it.
+  shot at a target that stands still hits at once); `maxMechDetail` keeps every mech outside the cockpit at its
+  most detailed model at any distance. A rules file must match in MercNet, so every player needs it.
 
-MercNet only lets players join whose active mods match the host's. Effect files reload while the game runs.
+MercNet only lets players join whose active mods match the host's; language mods are not compared. Effect files reload while the game runs.
 
 **TEST RANGE** on the Mods screen opens a mission to try looks in:
 
@@ -175,7 +180,7 @@ MercNet only lets players join whose active mods match the host's. Effect files 
 | `Ctrl`+`Shift`+`K` | Destroy the nearest target |
 
 To make looks of your own, use the [Mod Kit](modkit/README.md); [examples/mods](examples/mods/README.md) has
-ready mods (`energy-lasers`, `burn-lasers`, `fix-instant-shots`).
+ready mods (`energy-lasers`, `burn-lasers`, `fix-instant-shots`, `max-mech-detail`).
 
 ## What is not in this repository
 

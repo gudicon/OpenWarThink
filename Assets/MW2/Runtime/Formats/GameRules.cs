@@ -18,6 +18,7 @@ namespace MW2.Formats
 
         public string Source;
         public bool FixInstantShots;
+        public bool MaxMechDetail;
         public readonly List<string> Warnings = new List<string>();
 
         /// <summary>Reads the file; a file that is not JSON throws <see cref="MiniJson.Error"/>, unknown names and wrong
@@ -35,7 +36,12 @@ namespace MW2.Formats
                     if (pair.Value is bool b) rules.FixInstantShots = b;
                     else rules.Warnings.Add("fixInstantShots: expected true or false");
                 }
-                else rules.Warnings.Add($"unknown name \"{pair.Key}\" (known: fixInstantShots)");
+                else if (string.Equals(pair.Key, "maxMechDetail", StringComparison.OrdinalIgnoreCase))
+                {
+                    if (pair.Value is bool b) rules.MaxMechDetail = b;
+                    else rules.Warnings.Add("maxMechDetail: expected true or false");
+                }
+                else rules.Warnings.Add($"unknown name \"{pair.Key}\" (known: fixInstantShots, maxMechDetail)");
             }
             return rules;
         }

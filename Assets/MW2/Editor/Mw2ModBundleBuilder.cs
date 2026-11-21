@@ -134,8 +134,53 @@ namespace MW2.EditorTools
                 finally { try { Directory.Delete(temp, true); } catch (IOException) { } }
             }
             if (written.Count == 0) throw new InvalidOperationException("No platform could be built");
+            foreach (string line in Advice(source)) Debug.LogWarning("MW2 mod bundle: " + line);
             Debug.Log($"MW2 mod bundle {name}: {prefabs.Length} prefab(s): " + string.Join(", ", prefabs.Select(Path.GetFileNameWithoutExtension)));
             return written;
+        }
+
+        /// <summary>The parts the game keeps on a prefab (the rest is taken off before a copy wakes); a Light becomes
+        /// the game's own soft light.</summary>
+        static readonly Type[] Kept =
+        {
+            typeof(Transform), typeof(ParticleSystem), typeof(ParticleSystemRenderer), typeof(LineRenderer), typeof(TrailRenderer),
+            typeof(MeshFilter), typeof(MeshRenderer), typeof(SkinnedMeshRenderer), typeof(BillboardRenderer), typeof(LODGroup),
+            typeof(Animator), typeof(Animation), typeof(AudioSource), typeof(Light),
+        };
+
+        /// <summary>
+        /// Where the prefabs of <paramref name="source"/> will act otherwise in the game than in the Editor: scripts and
+        /// other parts that are not pictures, light or sound are taken off (a bundle carries no code), and particle systems
+        /// of which none plays on awake are started by the game itself. For the prefabs named in <paramref name="placedOnce"/>
+        /// (an impact or an explosion, which no shot stops) a looping system never ends, so each copy stays for 30 seconds;
+        /// on a shot looping is right, it stops when the shot ends. Empty when there is nothing to say.
+        /// </summary>
+        public static List<string> Advice(string source, string[] placedOnce = null)
+        {
+            var lines = new List<string>();
+            if (!AssetDatabase.IsValidFolder(source)) return lines;
+            foreach (string path in AssetDatabase.FindAssets("t:Prefab", new[] { source }).Select(AssetDatabase.GUIDToAssetPath).Distinct().OrderBy(p => p))
+            {
+                var go = AssetDatabase.LoadAssetAtPath<GameObject>(path);
+                if (go == null) continue;
+                string name = Path.GetFileNameWithoutExtension(path);
+                var off = new SortedSet<string>(StringComparer.Ordinal);
+                foreach (var c in go.GetComponentsInChildren<Component>(true))
+                    off.Add(c == null ? "a missing script" : Array.IndexOf(Kept, c.GetType()) < 0 ? c.GetType().Name : null);
+                off.Remove(null);
+                if (off.Count > 0)
+                    lines.Add($"{name}: the game takes off {string.Join(", ", off)} (a bundle carries no code; only pictures, light and sound stay)");
+                var systems = go.GetComponentsInChildren<ParticleSystem>(true);
+                if (systems.Length > 0 && !systems.Any(s => s.main.playOnAwake))
+                    lines.Add($"{name}: no particle system has Play On Awake (a script of its pack started them); the game starts them itself, " +
+                              "but turn Play On Awake on to see the same in the Editor");
+                bool once = placedOnce != null && placedOnce.Any(n => string.Equals(n, name, StringComparison.OrdinalIgnoreCase));
+                var loops = systems.Where(s => s.main.loop).Select(s => s.name).Distinct().ToArray();
+                if (once && loops.Length > 0)
+                    lines.Add($"{name}: looping particle systems ({string.Join(", ", loops.Take(4))}{(loops.Length > 4 ? ", ..." : "")}) never end, " +
+                              "so the game keeps each copy of this one-off effect for 30 seconds; turn Looping off");
+            }
+            return lines;
         }
 
         static BuildTarget EditorTarget() =>

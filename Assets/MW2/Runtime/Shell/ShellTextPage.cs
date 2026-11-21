@@ -58,6 +58,9 @@ namespace MW2.Shell
         /// </summary>
         public int Layout(string text, int start = 0)
         {
+            // A language mod translates the whole text before it is cut into words (the same text every call, so the
+            // returned start of the next page fits the next call).
+            text = ShellFont.Tr(text);
             int len = text.Length;
             int pos = start;
             int lineWidth = 0;
@@ -69,7 +72,7 @@ namespace MW2.Shell
             {
                 if (tok == 0)
                 {
-                    int w = _font.Width(word.ToString());
+                    int w = _font.RawWidth(word.ToString());
                     if (word.Length != 0) { line.Append(word); lineWidth += w; }
                     Flush(line, null, large);
                     if (link != -1) AddLink(false, w, lineWidth, link);
@@ -84,12 +87,12 @@ namespace MW2.Shell
                 {
                     case 1:
                     {
-                        int w = _font.Width(word.ToString());
+                        int w = _font.RawWidth(word.ToString());
                         if (center)
                         {
                             center = false;
-                            int pad = large ? (Width - _large.Width(line.ToString())) / 2 / _large.Width(" ")
-                                            : (Width - lineWidth) / 2 / _font.Width(" ");
+                            int pad = large ? (Width - _large.RawWidth(line.ToString())) / 2 / _large.RawWidth(" ")
+                                            : (Width - lineWidth) / 2 / _font.RawWidth(" ");
                             line.Insert(0, new string(' ', pad < 0 ? 0 : pad));
                         }
                         if (Bottom > 0 && Bottom < _y + LineHeight) return pos;
@@ -105,7 +108,7 @@ namespace MW2.Shell
                         return pos;
                     case 4:
                     {
-                        int w = _font.Width(word.ToString());
+                        int w = _font.RawWidth(word.ToString());
                         var prefixed = new StringBuilder();
                         for (int k = 0; k < tabs; k++) prefixed.Append("\\t");
                         tabs = 0;
@@ -113,7 +116,7 @@ namespace MW2.Shell
                         prefixed.Append(word);
                         word.Clear().Append(prefixed);
                         if (back != -1) { lineWidth -= back; back = -1; }
-                        int full = _font.Width(word.ToString());
+                        int full = _font.RawWidth(word.ToString());
                         if (Width < lineWidth + full)
                         {
                             lineWidth = Flush(line, word.ToString(), large);
@@ -127,7 +130,7 @@ namespace MW2.Shell
                         }
                         if (link != -1)
                         {
-                            int lw = _font.Width(word.ToString());
+                            int lw = _font.RawWidth(word.ToString());
                             Links.Add(wrapped
                                 ? new Link { X0 = X, Y0 = _y, X1 = X + lw, Y1 = _y + LineHeight, Id = link }
                                 : new Link { X0 = X + lineWidth - lw, Y0 = _y + _font.Height, X1 = X + lineWidth, Y1 = _y + _font.Height + LineHeight, Id = link });
@@ -175,13 +178,14 @@ namespace MW2.Shell
             line.Clear();
             if (next == null) return 0;
             line.Append(next);
-            return _font.Width(next);
+            return _font.RawWidth(next);
         }
 
         /// <summary>
         /// FUN_1007602a: the next token. 0 end (the word read up to the end is left in the buffer), 1 \n, 2 \c, 3 \s, 4 word
         /// (with one space per space after it), 5 \t, 6 \aNN, 7 \bNNN, 8 \gNNN, 9 \l; after 7 / 8 the next call returns the
-        /// word "\b%03d" / "\g%03d". Spaces after an escape are skipped. Word characters are masked with 0x7f.
+        /// word "\b%03d" / "\g%03d". Spaces after an escape are skipped. Word characters are masked with 0x7f
+        /// (a language mod's letters from U+00A0 are kept, port addition).
         /// </summary>
         static int Token(string t, StringBuilder word, ref int pos, int len, ref int link, ref int back)
         {
@@ -192,7 +196,10 @@ namespace MW2.Shell
             int i = pos;
             while (true)
             {
-                for (; i < len && t[i] != ' ' && t[i] != '\\'; i++) word.Append((char)(t[i] & 0x7f));
+                // Port addition: letters from U+00A0 come only from a language mod (the game's texts have no bytes
+                // 0xa0..0xff) and are kept whole while one is on, so ShellFont draws them; the original masks them.
+                for (; i < len && t[i] != ' ' && t[i] != '\\'; i++)
+                    word.Append(t[i] > 0xff || t[i] >= 0xa0 && ShellFont.Translate != null ? t[i] : (char)(t[i] & 0x7f));
                 if (i >= len) { pos = i; return 0; }
                 if (word.Length > 0)
                 {

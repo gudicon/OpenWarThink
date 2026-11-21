@@ -118,7 +118,9 @@ namespace MW2.Shell
                     var raw = new byte[length];
                     Buffer.BlockCopy(bwd, body, raw, 0, length);
                     if (length > 0) raw[length - 1] = 0;
-                    string text = Latin1(ExpandNames(raw, career, insert));
+                    // Port addition: a language mod's whole text of this resource, escapes included.
+                    string own = Translated?.Invoke(resource);
+                    string text = own != null ? ExpandNames(own, career, insert) : Latin1(ExpandNames(raw, career, insert));
                     int at = 0;
                     do
                     {
@@ -129,6 +131,76 @@ namespace MW2.Shell
                     break;
                 }
             return pages;
+        }
+
+        /// <summary>Port addition: the text a language mod has for a briefing resource, or null (set by the language).</summary>
+        public static Func<string, string> Translated;
+
+        /// <summary>Port addition: a language mod's ComStar news texts by campaign step resource (set by the language).</summary>
+        public static IReadOnlyDictionary<string, string> TranslatedNews;
+
+        static IReadOnlyDictionary<string, string> s_newsFor;
+        static Dictionary<string, string> s_newsByEnglish;
+
+        /// <summary>
+        /// Port addition: a language mod's text for the news the career keeps (+0x342, copied from a step's NEWS chunk by
+        /// Campaign_Load). The career holds the English text as ASCII and at most 0x1000 bytes of it, so the NEWS chunk of
+        /// every translated resource is read and compared in that form. Null when there is no translation.
+        /// </summary>
+        public static string NewsTranslation(ShellData data, string english)
+        {
+            var news = TranslatedNews;
+            if (news == null || english == null || data == null) return null;
+            if (!ReferenceEquals(s_newsFor, news))
+            {
+                var map = new Dictionary<string, string>(StringComparer.Ordinal);
+                foreach (var pair in news)
+                {
+                    byte[] bwd = data.ReadBwd(pair.Key);
+                    if (bwd == null || !Campaign.Has(bwd)) continue;
+                    string own = Campaign.Decode(pair.Key, bwd)?.News;
+                    if (own == null) continue;
+                    string key = CareerForm(own);
+                    if (!map.ContainsKey(key)) map[key] = pair.Value;
+                }
+                s_newsByEnglish = map;
+                s_newsFor = news;
+            }
+            return s_newsByEnglish.TryGetValue(CareerForm(english), out var text) ? text : null;
+        }
+
+        /// <summary>A text as the career record keeps it: ASCII (other characters become '?'), at most 0x1000 bytes.</summary>
+        static string CareerForm(string s)
+        {
+            string ascii = Encoding.ASCII.GetString(Encoding.ASCII.GetBytes(s));
+            return ascii.Length > 0x1000 ? ascii.Substring(0, 0x1000) : ascii;
+        }
+
+        /// <summary>FUN_100073f0 on a text (a language mod's briefing): the same escapes as <see cref="ExpandNames(byte[], Career, string)"/>.</summary>
+        public static string ExpandNames(string orders, Career career, string insert = null)
+        {
+            if (orders == null) return null;
+            var result = new StringBuilder(orders.Length + 32);
+            string playerName = "";
+            foreach (var pilot in career.UnitPilots)
+                if (pilot.Player) { playerName = pilot.Name; break; }
+            int n = orders.IndexOf('\0');
+            if (n < 0) n = orders.Length;
+            for (int i = 0; i < n; i++)
+            {
+                if (orders[i] == '\\')
+                {
+                    char c = i + 1 < n ? orders[i + 1] : '\0';
+                    if (c == 'm' || c == 'M') result.Append(career.UnitName);
+                    else if (c == 'p' || c == 'P') result.Append(playerName);
+                    else if (c == 'q' || c == 'Q') result.Append(insert ?? "");
+                    else if (c != 'r' && c != 'R') { result.Append(orders[i]); if (c != '\0') result.Append(c); }
+                    i++;
+                    continue;
+                }
+                result.Append(orders[i]);
+            }
+            return result.ToString();
         }
 
         public static string Latin1(byte[] b)

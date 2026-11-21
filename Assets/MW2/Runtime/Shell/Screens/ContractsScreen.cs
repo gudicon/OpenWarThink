@@ -71,9 +71,10 @@ namespace MW2.Shell
             foreach (var mark in _employerMarks) mark?.Hide();
             if (_offers.Count == 0) return;
             var offer = _offers[_selected];
-            byte[] text = ShellBriefing.ExpandNames(Encoding.ASCII.GetBytes(offer.Text), _shell.Career);
+            // The text form of FUN_100073f0 (the same for the game's ASCII text; keeps a language mod's letters).
+            string text = ShellBriefing.ExpandNames(offer.Text, _shell.Career);
             _offerPage = new ShellTextPage(_shell.Font11, _shell.Font7, 0x2f, 0x41, 0x225, 0x11e);
-            _offerPage.Layout(ShellBriefing.Latin1(text));
+            _offerPage.Layout(text);
             _offerPage.Create(_shell.Surface, ShellSurface.MakeRemap(0x16), ShellSurface.MakeRemap(0x9d));
             _offerPage.StartTyping();
             _employerMarks[_selected]?.Show();

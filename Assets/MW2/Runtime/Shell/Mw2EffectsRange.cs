@@ -254,7 +254,7 @@ namespace MW2.Shell
                     continue;
                 }
                 int k = _weapons.FindIndex(w => string.Equals(w.Name, part[0], StringComparison.OrdinalIgnoreCase));
-                if (part.Length != 3 || k < 0 || !float.TryParse(part[2], System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out float metres))
+                if (part.Length != 3 && !(part.Length == 4 && part[3] == "hit") || k < 0 || !float.TryParse(part[2], System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out float metres))
                 {
                     Debug.LogWarning("MW2 effects range: cannot read the step " + step);
                     continue;
@@ -272,6 +272,13 @@ namespace MW2.Shell
                 float wait = Time.realtimeSinceStartup + 1.5f;
                 while (Mw2Projectile.Active.Count == 0 && Time.realtimeSinceStartup < wait) yield return null;
                 float fired = Time.realtimeSinceStartup;
+                // WEAPON:view:metres:hit - the pictures are timed from the moment the first shot ends (slow missiles).
+                if (part.Length == 4 && part[3] == "hit")
+                {
+                    var first = Mw2Projectile.Active.Count > 0 ? Mw2Projectile.Active[0] : null;
+                    while (first != null && Mw2Projectile.Active.Contains(first) && Time.realtimeSinceStartup - fired < 8f) yield return null;
+                    fired = Time.realtimeSinceStartup;
+                }
                 for (int i = 0; i < after.Length; i++)
                 {
                     while (Time.realtimeSinceStartup - fired < after[i]) yield return null;
