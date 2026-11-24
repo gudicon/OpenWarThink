@@ -1,0 +1,6 @@
+{
+  // Machine guns: thin tracers, small flashes, ricochet sparks.
+  "shot":    {"hideOriginal": true, "prefab": {"bundle": "arsenal", "asset": "TracerThin", "life": 0.05}},
+  "muzzle":  {"hideOriginal": true, "prefab": {"bundle": "arsenal", "asset": "MuzzleBlast", "life": 0.08, "scale": 0.35}},
+  "impact":  {"hideOriginal": true, "prefab": {"bundle": "arsenal", "asset": "Ricochet", "life": 0.15}}
+}

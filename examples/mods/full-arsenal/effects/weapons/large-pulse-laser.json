@@ -1,0 +1,6 @@
+{
+  // Pulse lasers: the same beams, shorter (at least 0.12 s) and fading faster.
+  "shot":    {"hideOriginal": true, "prefab": {"bundle": "arsenal", "asset": "BeamBlue", "reach": "instant", "stretch": true, "hold": 0.12, "life": 0.05, "flicker": 0.2}},
+  "muzzle":  {"hideOriginal": true},
+  "impact":  {"hideOriginal": true, "prefab": {"bundle": "arsenal", "asset": "Burn", "life": 0.6, "scale": 1.4}}
+}

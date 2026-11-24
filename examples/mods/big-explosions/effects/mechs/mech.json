@@ -1,0 +1,9 @@
+{
+  // Any other mech (no tonnage known).
+  "death":      {"hideOriginal": true, "prefab": {"bundle": "booms", "asset": "MechDeath", "life": 2.0, "scale": 1.0}},
+  "burst":      {"hideOriginal": true, "prefab": {"bundle": "booms", "asset": "WreckBurst", "life": 0.5, "scale": 1.0}},
+  "section":    {"prefab": {"bundle": "booms", "asset": "SectionBlow", "life": 0.6, "scale": 1.0}},
+  "blowApart":  {"prefab": {"bundle": "booms", "asset": "BlowApart", "life": 1.0, "scale": 1.0}},
+  "partBlast":  {"hideOriginal": true, "prefab": {"bundle": "booms", "asset": "WreckBurst", "life": 0.5, "scale": 0.65}},
+  "debris":     {"hideOriginal": true, "prefab": {"bundle": "booms", "asset": "DebrisTrail", "life": 0.3, "scale": 1.0}}
+}

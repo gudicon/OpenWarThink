@@ -132,8 +132,9 @@ namespace MW2
             }
             // The Glide fog colour is SKYGND.PAR fog=: SimMain passes it at +0x14 of the plugin's FirstDevice block and
             // zglide.dll calls grFogColorValue only there (0x10001b60). The mixed colour above is only the clear colour.
+            // FogScale is 1 unless a graphics mod (graphics/quality.json "fogDistance") moves the fog.
             Shader.SetGlobalColor(FogColorId, FogColor);
-            Shader.SetGlobalVector(FogParamsId, new Vector4(FogDistance > 0f ? 1f / FogDistance : 0f, strength, 1f, 0f));
+            Shader.SetGlobalVector(FogParamsId, new Vector4(FogDistance > 0f ? 1f / (FogDistance * Mw2Graphics.FogScale) : 0f, strength, 1f, 0f));
 
             SetLights();
 

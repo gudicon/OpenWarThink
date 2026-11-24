@@ -1,0 +1,6 @@
+{
+  // Anti-missile system: thin tracers and little puffs.
+  "shot":    {"hideOriginal": true, "prefab": {"bundle": "arsenal", "asset": "TracerThin", "life": 0.05}},
+  "muzzle":  {"hideOriginal": true, "prefab": {"bundle": "arsenal", "asset": "MuzzleBlast", "life": 0.08, "scale": 0.3}},
+  "impact":  {"hideOriginal": true, "prefab": {"bundle": "arsenal", "asset": "Ricochet", "life": 0.15, "scale": 0.7}}
+}

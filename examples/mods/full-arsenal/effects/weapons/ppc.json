@@ -1,0 +1,6 @@
+{
+  // PPC: a big lumpy ball of blue plasma laced with white lightning (as the DOS game), dragging a jagged discharge.
+  "shot":    {"hideOriginal": true, "prefab": {"bundle": "arsenal", "asset": "PpcBolt", "life": 0.2}},
+  "muzzle":  {"hideOriginal": true, "prefab": {"bundle": "arsenal", "asset": "PpcMuzzle", "life": 0.2}},
+  "impact":  {"hideOriginal": true, "prefab": {"bundle": "arsenal", "asset": "PpcHit", "life": 0.45}}
+}

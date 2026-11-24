@@ -40,8 +40,8 @@ Work in progress. What works today, with your own copy of the game:
 - the Mercenaries shell: career, contracts, finances, MechLab, repair, salvage, saving and loading,
   Instant Action and random missions;
 - MercNet multiplayer over a local network;
-- mods (an addition of the port): weapon looks, mech destruction explosions, translations and optional fixes, from a `Mods`
-  folder next to the game, with a test range to try them (see [Mods](#mods));
+- mods (an addition of the port): weapon looks, mech destruction explosions, picture and modern lighting, mech detail,
+  translations and optional fixes, from a `Mods` folder next to the game, with a test range to try them (see [Mods](#mods));
 - Windows (64-bit) and macOS 12+ (Intel and Apple silicon).
 
 The whole story campaign has been played through to its ending by automated pilots
@@ -165,9 +165,14 @@ What a mod can change today:
   cockpit messages and the port's screens, with extra letters for the game's fonts. **LANGUAGE TEMPLATE** on the
   Mods screen writes every text to translate from your copy of the game and checks the translation's pages; see
   [Translating the game](examples/mods/TRANSLATING.md);
+- **picture** (`graphics/quality.json`): anti-aliasing, texture filtering, fog distance, colour, sharpening, vignette,
+  bloom, HDR and an optional modern lighting of the world with each mission's own lights: metal and rough surfaces,
+  sun shadows, ambient occlusion, reflections of the world, sun rays and the original's shot and explosion lights.
+  Only the look changes; night missions stay dark;
+- **mech detail** (`graphics/detail.json`): `maxMechDetail` keeps every mech and wreck outside the cockpit at its most
+  detailed model at any distance; `opaqueGlass` draws the windshields of mechs solid in one colour;
 - **fixes** (`rules/fixes.json`): `fixInstantShots` makes every shot fly the whole way (in the original every second
-  shot at a target that stands still hits at once); `maxMechDetail` keeps every mech outside the cockpit at its
-  most detailed model at any distance. A rules file must match in MercNet, so every player needs it.
+  shot at a target that stands still hits at once).
 
 MercNet only lets players join whose active mods match the host's; language mods are not compared. Effect files reload while the game runs.
 
@@ -180,7 +185,8 @@ MercNet only lets players join whose active mods match the host's; language mods
 | `Ctrl`+`Shift`+`K` | Destroy the nearest target |
 
 To make looks of your own, use the [Mod Kit](modkit/README.md); [examples/mods](examples/mods/README.md) has
-ready mods (`energy-lasers`, `burn-lasers`, `fix-instant-shots`, `max-mech-detail`).
+ready mods (`energy-lasers`, `burn-lasers`, `full-arsenal`, `big-explosions`, `modern-light`, `sharp-picture`,
+`max-mech-detail`, `fix-instant-shots`).
 
 ## What is not in this repository
 

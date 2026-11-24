@@ -12,7 +12,7 @@ Shader "MW2/TexturedAlphaLit"
     }
     SubShader
     {
-        Tags { "Queue" = "AlphaTest" "RenderType" = "Transparent" }
+        Tags { "Mw2Depth" = "Alpha" "Queue" = "AlphaTest" "RenderType" = "Transparent" }
         Cull Back   // one-sided POLY faces, as Render_Polygon 0x10056eb6 culls back faces
         ZWrite [_ZWrite]
         Blend SrcAlpha OneMinusSrcAlpha
@@ -28,6 +28,7 @@ Shader "MW2/TexturedAlphaLit"
             #include "Mw2Palette.cginc"
             #include "Mw2Enhanced.cginc"
             #include "Mw2ExtraLight.cginc"
+            #include "Mw2Modern.cginc"
 
             sampler2D _MainTex;
             float4 _MainTex_ST;
@@ -35,6 +36,8 @@ Shader "MW2/TexturedAlphaLit"
             float _Ambient;
             float _Unlit;
             float _ShadeFull;     // 1 on the cockpit shell: drawn at full light
+            float _Mw2OpaqueUnitGlass;   // graphics/detail.json "opaqueGlass": unit windshields drawn solid
+            float4 _Mw2GlassColor;       // their colour (Mw2TextureBank.GlassColor)
 
             struct appdata { float4 vertex : POSITION; float3 normal : NORMAL; float4 color : COLOR; float2 uv : TEXCOORD0; float2 enhanced : TEXCOORD4; };
             struct v2f { float4 pos : SV_POSITION; float3 normal : TEXCOORD0; float2 uv : TEXCOORD1; float4 color : COLOR; float2 enhanced : TEXCOORD4; float fogDepth : TEXCOORD5; float3 worldPos : TEXCOORD6; };
@@ -54,6 +57,7 @@ Shader "MW2/TexturedAlphaLit"
 
             fixed4 frag (v2f i, fixed facing : VFACE) : SV_Target
             {
+                if (_Mw2EnvPass > 0.5 && _ShadeFull > 0.5) discard;   // graphics mods only: the cockpit is not in the probe
                 if (_Mw2Enhanced > 0.5)
                 {
                     float2 data = i.enhanced;
@@ -69,9 +73,24 @@ Shader "MW2/TexturedAlphaLit"
                 if (_Unlit > 0.5) light = _Mw2Infrared > 0.5 ? float3(1, 170.0 / 255.0, 0) : 1;   // the sky dome, Material_Shade 0x1001afb0
                 if (_ShadeFull > 0.5) light = 1;
                 fixed4 tex = Mw2SampleMain(_MainTex, _MainTex_TexelSize, i.uv);
-                clip(tex.a - 1.0 / 255.0);
+                float alpha = tex.a * i.color.a;
+                // Port addition: a mod may draw the windshields of external units solid in one colour (the glass key
+                // also carries the sky's scrolling clouds, which would run over it); the cockpit shell and the sky keep
+                // the original picture and palette alpha.
+                if (_Mw2OpaqueUnitGlass > 0.5 && _ShadeFull < 0.5 && _Unlit < 0.5 && Mw2UnitGlass(i.enhanced))
+                {
+                    alpha = 1;
+                    tex.rgb = _Mw2GlassColor.rgb;
+                }
+                else clip(tex.a - 1.0 / 255.0);
                 float3 extraLight = _Unlit > 0.5 || _ShadeFull > 0.5 ? 0 : Mw2ExtraLight(n, i.worldPos);   // port extensions only (0 without them)
-                return fixed4(Mw2Fog(tex.rgb * i.color.rgb * (light + extraLight), i.fogDepth), tex.a * i.color.a);
+                if (Mw2ModernFor(_ShadeFull) && _Unlit < 0.5)   // graphics mods only
+                {
+                    float3 albedo = tex.rgb * i.color.rgb;
+                    float3 lit = Mw2ModernLightFor(albedo, n, i.worldPos, Mw2ModernSurfaceFor(i.enhanced, 0, _ShadeFull), _ShadeFull > 0.5 ? 1 : Mw2SunShadow(i.worldPos, n), _ShadeFull);
+                    return fixed4(Mw2Fog(lit + albedo * extraLight, i.fogDepth), alpha);
+                }
+                return fixed4(Mw2Fog(tex.rgb * i.color.rgb * (light + extraLight), i.fogDepth), alpha);
             }
             ENDCG
         }

@@ -1,8 +1,8 @@
 {
   "id": "max-mech-detail",
   "name": "Maximum Mech Detail",
-  "version": "1.0",
+  "version": "1.1",
   "author": "OpenWarThink",
-  "description": "Keeps all external mech models at maximum detail (LOD1), regardless of distance. Preserves the cockpit representation.",
+  "description": "Keeps all external mech models at maximum detail (LOD1), regardless of distance. Windshields of external units are opaque. Preserves the cockpit representation.",
   "api": 1
 }

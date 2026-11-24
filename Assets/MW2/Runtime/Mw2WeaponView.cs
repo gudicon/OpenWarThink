@@ -30,7 +30,7 @@ namespace MW2
         void Started(Transform shot);
 
         /// <summary>The shot hit at <paramref name="point"/>; <paramref name="back"/> points the way it came. Returns
-        /// whether the original impact effect is drawn (its sound, area damage and debris happen either way).</summary>
+        /// whether the original impact effect is drawn (its sound and area damage happen either way; the missile hit debris only with the original picture).</summary>
         bool Hit(Vector3 point, Vector3 back);
 
         /// <summary>The shot is removed at <paramref name="point"/>: after a hit, or when it ran out.</summary>

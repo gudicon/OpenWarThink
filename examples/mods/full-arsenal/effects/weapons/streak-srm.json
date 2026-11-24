@@ -1,0 +1,6 @@
+{
+  // Streak missiles: as the short-range ones.
+  "shot":    {"hideOriginal": true, "prefab": {"bundle": "arsenal", "asset": "Missile", "life": 0.3}},
+  "muzzle":  {"hideOriginal": true, "prefab": {"bundle": "arsenal", "asset": "Launch", "life": 0.2}},
+  "impact":  {"hideOriginal": true, "prefab": {"bundle": "arsenal", "asset": "Blast", "life": 0.6, "scale": 0.9}}
+}

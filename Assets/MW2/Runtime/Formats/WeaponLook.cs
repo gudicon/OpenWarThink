@@ -170,7 +170,7 @@ namespace MW2.Formats
 
         public sealed class FlashLook
         {
-            public bool HideOriginal;       // the original effect model and its light; sound, area damage, debris stay
+            public bool HideOriginal;       // the original effect model and its light (and the debris of missile and autocannon hits); sound, area damage stay
             public SpriteLook Flash;
             public LightLook Light;
             public SparksLook Sparks;

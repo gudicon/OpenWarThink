@@ -14,7 +14,7 @@ Shader "MW2/TexturedLit"
     }
     SubShader
     {
-        Tags { "RenderType" = "Opaque" }
+        Tags { "Mw2Depth" = "Opaque" "RenderType" = "Opaque" }
         Cull Back   // one-sided POLY faces, as Render_Polygon 0x10056eb6 culls back faces
         ZWrite [_ZWrite]
         Pass
@@ -29,6 +29,7 @@ Shader "MW2/TexturedLit"
             #include "Mw2Palette.cginc"
             #include "Mw2Enhanced.cginc"
             #include "Mw2ExtraLight.cginc"
+            #include "Mw2Modern.cginc"
 
             sampler2D _MainTex;
             float4 _MainTex_ST;
@@ -56,6 +57,7 @@ Shader "MW2/TexturedLit"
 
             fixed4 frag (v2f i, fixed facing : VFACE) : SV_Target
             {
+                if (_Mw2EnvPass > 0.5 && _ShadeFull > 0.5) discard;   // graphics mods only: the cockpit is not in the probe
                 if (_Mw2Enhanced > 0.5 && _Ground < 0.5)
                 {
                     float2 data = i.enhanced;
@@ -73,6 +75,12 @@ Shader "MW2/TexturedLit"
                 if (_Ground > 0.5 && _Mw2LightParams.w > 0.5) light = Mw2GroundLight();
                 fixed4 tex = Mw2SampleMain(_MainTex, _MainTex_TexelSize, i.uv);
                 float3 extraLight = _Unlit > 0.5 || _ShadeFull > 0.5 ? 0 : Mw2ExtraLight(n, i.worldPos);   // port extensions only (0 without them)
+                if (Mw2ModernFor(_ShadeFull) && _Unlit < 0.5)   // graphics mods only
+                {
+                    float3 albedo = tex.rgb * i.color.rgb;
+                    float3 lit = Mw2ModernLightFor(albedo, n, i.worldPos, Mw2ModernSurfaceFor(i.enhanced, _Ground, _ShadeFull), _ShadeFull > 0.5 ? 1 : Mw2SunShadow(i.worldPos, n), _ShadeFull);
+                    return fixed4(Mw2Fog(lit + albedo * extraLight, i.fogDepth), 1);
+                }
                 return fixed4(Mw2Fog(tex.rgb * i.color.rgb * (light + extraLight), i.fogDepth), 1);
             }
             ENDCG

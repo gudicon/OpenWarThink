@@ -1,0 +1,6 @@
+{
+  // The lightest autocannon: a smaller blast.
+  "shot":    {"hideOriginal": true, "prefab": {"bundle": "arsenal", "asset": "Tracer", "life": 0.1, "scale": 0.7}},
+  "muzzle":  {"hideOriginal": true, "prefab": {"bundle": "arsenal", "asset": "MuzzleBlast", "life": 0.12, "scale": 0.7}},
+  "impact":  {"hideOriginal": true, "prefab": {"bundle": "arsenal", "asset": "ShellHit", "life": 0.3, "scale": 0.7}}
+}

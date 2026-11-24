@@ -65,6 +65,8 @@ namespace MW2
             var material = flatMaterial;
             var textures = new Mw2TextureBank(prj, mission, palette, dir, sink, flatMaterial.GetTexture("_Palette") as Texture2D);
             (PolyMeshBuilder.TextureInfo info, Material material)? TextureFor(int key) => textures.Get(key);
+            Mw2Graphics.SetMissionTextures(textures.KeyNames());   // graphics mods: the surface classes of unit parts
+            Shader.SetGlobalVector("_Mw2GlassColor", textures.GlassColor());   // graphics/detail.json "opaqueGlass"
 
             var meshCache = new Dictionary<int, List<(Mesh mesh, Material[] materials)>>();
             var lodChains = new Dictionary<int, List<(float threshold, List<int> objects)>>();
@@ -599,7 +601,7 @@ namespace MW2
             sink.BeginFolder(dir);
             var root = MechAssembler.Build(prj, mech, palette, material, lod,
                 (name, mesh) => sink.Save(mesh, $"{dir}/{name}.asset"), allLods: true,
-                textureFor: textures == null ? null : textures.Get, paint: paint);
+                textureFor: textures == null ? null : textures.GetUnit, paint: paint);
             sink.Flush();
 
             // MEK: i32 tonnage, i32 walking MP, ... (mech loader 0x1002f9e0: max speed = MEK[1] * 105.49).
@@ -827,7 +829,7 @@ namespace MW2
                         int id = serial++;
                         go = MechAssembler.Build(prj, unit.Model, palette, material, unitLod,
                             (name, mesh) => sink.Save(mesh, $"{unitDir}/{id}_{name}.asset"), allLods: true,
-                            textureFor: textures.Get, paint: mission.TeamPaint[unit.Team & 15]);
+                            textureFor: textures.GetUnit, paint: mission.TeamPaint[unit.Team & 15]);
                     }
                     catch (System.Exception e)
                     {
@@ -1033,6 +1035,15 @@ namespace MW2
             _celById = prj.Entries("CEL").ToDictionary(e => e.Id);
         }
 
+        /// <summary>The CEL name of each texture key of the mission (its first frame).</summary>
+        public Dictionary<int, string> KeyNames()
+        {
+            var names = new Dictionary<int, string>();
+            foreach (var pair in _mission.TextureKeys)
+                if (pair.Value.Count > 0 && _celById.TryGetValue(pair.Value[0], out var entry)) names[pair.Key] = entry.Name;
+            return names;
+        }
+
         public (PolyMeshBuilder.TextureInfo info, Material material)? Get(int key)
         {
             if (_byKey.TryGetValue(key, out var cached)) return cached;
@@ -1065,6 +1076,52 @@ namespace MW2
             _byKey[key] = result;
             return result;
         }
+
+        /// <summary>
+        /// The texture of a face of a unit: as <see cref="Get"/>, except that with graphics/detail.json "opaqueGlass" the
+        /// windshield key 0x18c of a mission without its texture (BUZ1, GRA*, MIS*, OUT3, SOL3: DrawTexturedPolygon
+        /// 0x10001081 leaves such faces out, so the original shows an open cockpit) takes MCC1CLOU, the windshield of most
+        /// missions. The sky keeps <see cref="Get"/>, so it gains no clouds. Port addition.
+        /// </summary>
+        public (PolyMeshBuilder.TextureInfo info, Material material)? GetUnit(int key)
+        {
+            var result = Get(key);
+            if (result != null || key != GlassKey || !Mw2ModRules.Detail.OpaqueGlass) return result;
+            if (_glassFallback == null)
+            {
+                var entry = _celById.Values.FirstOrDefault(e => string.Equals(e.Name, "MCC1CLOU", System.StringComparison.OrdinalIgnoreCase));
+                _glassFallback = entry.Name != null && LookupSize(entry) ? Load(entry) : default((PolyMeshBuilder.TextureInfo, Material)?);
+            }
+            return _glassFallback;
+        }
+
+        /// <summary>
+        /// The colour of solid windshields (graphics/detail.json "opaqueGlass"): the average of the glass key's CEL (or of
+        /// MCC1CLOU), weighted by each pixel's palette alpha. The key also shows the sky's scrolling clouds, so its picture
+        /// would run over the glass; the solid glass takes this one colour instead. Port addition.
+        /// </summary>
+        public Vector4 GlassColor()
+        {
+            PrjArchive.Entry entry = default;
+            if (_mission.TextureKeys.TryGetValue(GlassKey, out var frames) && frames.Count > 0) _celById.TryGetValue(frames[0], out entry);
+            if (entry.Name == null)
+                entry = _celById.Values.FirstOrDefault(e => string.Equals(e.Name, "MCC1CLOU", System.StringComparison.OrdinalIgnoreCase));
+            if (entry.Name == null) return new Vector4(0.6f, 0.7f, 0.8f, 1f);
+            var cel = Cel.Decode(_prj.Read(entry));
+            double r = 0, g = 0, b = 0, w = 0;
+            foreach (byte i in cel.Indices)
+            {
+                Color32 c = cel.HasOwnColors ? (i < cel.Colors.Length ? cel.Colors[i] : default) : _palette[i];
+                double a = cel.HasOwnColors ? c.a / 255.0 : 1.0;
+                r += c.r * a; g += c.g * a; b += c.b * a; w += a;
+            }
+            if (w <= 0) return new Vector4(0.6f, 0.7f, 0.8f, 1f);
+            return new Vector4((float)(r / w / 255), (float)(g / w / 255), (float)(b / w / 255), 1f);
+        }
+
+        /// <summary>The windshield key of the units (PolyMeshBuilder: the special glass key 0x18c).</summary>
+        public const int GlassKey = 0x18c;
+        (PolyMeshBuilder.TextureInfo info, Material material)? _glassFallback;
 
         /// <summary>
         /// Texture_Lookup 0x1000219e also gives -1 for a CEL whose width or height is not a power of two

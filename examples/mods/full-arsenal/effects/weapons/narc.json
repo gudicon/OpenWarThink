@@ -1,0 +1,6 @@
+{
+  // NARC: a small missile; the pod blinks red on the target for six seconds.
+  "shot":    {"hideOriginal": true, "prefab": {"bundle": "arsenal", "asset": "Missile", "life": 0.3, "scale": 0.6}},
+  "muzzle":  {"hideOriginal": true, "prefab": {"bundle": "arsenal", "asset": "Launch", "life": 0.2, "scale": 0.6}},
+  "impact":  {"hideOriginal": true, "prefab": {"bundle": "arsenal", "asset": "Beacon"}}
+}

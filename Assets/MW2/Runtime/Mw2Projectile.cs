@@ -165,9 +165,10 @@ namespace MW2
             if (models != null)
                 foreach (var g in models.Glows)
                     if (g.Type == def.ProjectileType) { glow = g.Rgb; break; }
-            if (Mw2Options.MultipleLights && !hide)
+            if ((Mw2Options.MultipleLights || Mw2Graphics.DynamicLights) && !hide)
             {
                 var light = go.AddComponent<Mw2PointLight>();
+                light.ModernOnly = !Mw2Options.MultipleLights;     // graphics mods only (Mw2Graphics.DynamicLights)
                 light.Radius = 10000f * Units;
                 light.Color = glow.HasValue ? new Color(glow.Value.r / 128f, glow.Value.g / 128f, glow.Value.b / 128f) : new Color(0.2f, 0.2f, 0.2f);
             }
@@ -239,7 +240,8 @@ namespace MW2
 
             transform.position = next;
             Face();
-            if (_def.IsMissileType && Mw2Effects.Instance != null) Mw2Effects.Instance.Smoke(pos, next - pos);     // 0x1004dcc4
+            // 0x1004dcc4; an extension that draws the shot itself draws its smoke too.
+            if (_def.IsMissileType && Mw2Effects.Instance != null && (_view == null || _view.DrawsOriginal)) Mw2Effects.Instance.Smoke(pos, next - pos);
             if (_homing != null) Steer(next);
         }
 
@@ -267,7 +269,7 @@ namespace MW2
             }
             var effects = Mw2Effects.Instance;
             bool original = _view == null || _view.Hit(point, -_velocity);
-            if (effects != null) effects.Spawn(_def.ImpactEffect | flags, point, unit != null ? unit.transform : null, null, _owner, original);
+            if (effects != null) effects.Spawn(_def.ImpactEffect | flags, point, unit != null ? unit.transform : null, null, _owner, original, original);
             Retire();
         }
 
@@ -301,7 +303,7 @@ namespace MW2
             // building, 0x400 ground or other scenery).
             int flags = unit != null ? 0x100 | (unit.IsPlayer ? 0x4000 : 0) : structure != null ? 0x200 : debrisHit ? 0 : 0x400;
             bool original = _view == null || _view.Hit(point, -_velocity);
-            if (effects != null) effects.Spawn(_def.ImpactEffect | flags, point, unit != null ? unit.transform : null, null, _owner, original);
+            if (effects != null) effects.Spawn(_def.ImpactEffect | flags, point, unit != null ? unit.transform : null, null, _owner, original, original);
             Retire();
         }
     }

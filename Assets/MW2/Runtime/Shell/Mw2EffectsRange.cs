@@ -98,6 +98,15 @@ namespace MW2.Shell
                 if (unit == null || unit == _player) continue;
                 foreach (var ai in unit.GetComponents<Mw2MechAI>()) ai.enabled = false;
             }
+            // --effects-range-heading DEGREES: the player turns to that heading first (pictures of light and shadow from
+            // other sides).
+            if (_player != null && float.TryParse(Arg("--effects-range-heading"), System.Globalization.NumberStyles.Float,
+                    System.Globalization.CultureInfo.InvariantCulture, out float turn)
+                && _player.TryGetComponent<Mw2MechController>(out var own))
+            {
+                var at = _player.transform.position / PolyModel.UnitsToMeters;
+                own.NetSetPose(Mathf.RoundToInt(at.x), Mathf.RoundToInt(at.y), Mathf.RoundToInt(at.z), turn);
+            }
             PlaceTargets();
             var start = _player != null && _player.Weapons.Count > 0 ? _player.Weapons[0].Def : null;
             _index = Math.Max(0, start != null ? _weapons.FindIndex(w => w.Type == start.Type) : _weapons.FindIndex(w => w.Name == "MLAS"));

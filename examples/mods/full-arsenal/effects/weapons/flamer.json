@@ -1,0 +1,6 @@
+{
+  // Flamers: each blob of the burst rolls out as fire and smoke and sets the target alight for a moment.
+  "shot":    {"hideOriginal": true, "prefab": {"bundle": "arsenal", "asset": "FlameShot", "life": 0.2}},
+  "muzzle":  {"hideOriginal": true, "prefab": {"bundle": "arsenal", "asset": "FlameMuzzle", "life": 0.15}},
+  "impact":  {"hideOriginal": true, "prefab": {"bundle": "arsenal", "asset": "FireHit"}}
+}

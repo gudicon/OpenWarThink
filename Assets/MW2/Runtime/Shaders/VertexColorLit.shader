@@ -18,7 +18,7 @@ Shader "MW2/VertexColorLit"
     }
     SubShader
     {
-        Tags { "RenderType" = "Opaque" }
+        Tags { "Mw2Depth" = "Opaque" "RenderType" = "Opaque" }
         Cull Back   // one-sided POLY faces, as Render_Polygon 0x10056eb6 culls back faces
         ZWrite [_ZWrite]
         Pass
@@ -33,6 +33,7 @@ Shader "MW2/VertexColorLit"
             #include "Mw2Palette.cginc"
             #include "Mw2Enhanced.cginc"
             #include "Mw2ExtraLight.cginc"
+            #include "Mw2Modern.cginc"
 
             float _Ambient;
             float4 _LightColor0;
@@ -62,6 +63,7 @@ Shader "MW2/VertexColorLit"
 
             fixed4 frag (v2f i, fixed facing : VFACE) : SV_Target
             {
+                if (_Mw2EnvPass > 0.5 && _ShadeFull > 0.5) discard;   // graphics mods only: the cockpit is not in the probe
                 if (_Mw2Enhanced > 0.5)
                 {
                     float2 data = i.enhanced;
@@ -80,6 +82,24 @@ Shader "MW2/VertexColorLit"
                 // Type 4: the table 0x102880c0 is filled once from the mission's first palette (Palette_FillLightTable
                 // 0x10004cc0), so it does not follow the live palette; the vertex colours are interpolated RGB.
                 // UV1.x is the vertex index a; Glide interpolates the RGB, so the table is read per vertex in vert().
+                // Graphics mods only (Mw2Modern.cginc): types 1 and 4 lit as surfaces. The albedo of a type 1 face is its row
+                // at the shade full light gives it (0x1002f543 with level 127); type 4 keeps its vertex colour.
+                bool modern = Mw2ModernFor(_ShadeFull) && (type == 1 || type == 4 || _UsePalette < 0.5);
+                if (modern)
+                {
+                    float3 albedo = i.color.rgb;
+                    if (_UsePalette > 0.5 && type == 1)
+                    {
+                        float full = clamp(floor(127 * floor(floor(i.material.x + 0.5) / 2) / 1088), 0, 15);
+                        albedo = Mw2PaletteColor((high - type * 16) * 16 + full);
+                        // The shell keeps the colour the cockpit pass gives it: the row's brightest shade.
+                        if (_ShadeFull > 0.5) albedo = Mw2PaletteColor((high - type * 16) * 16 + 15);
+                    }
+                    // The shell sits inside the player's own mech, whose body would shade it from the sun.
+                    float shadow = _ShadeFull > 0.5 ? 1 : Mw2SunShadow(i.worldPos, n);
+                    float3 lit = Mw2ModernLightFor(albedo, n, i.worldPos, Mw2ModernSurfaceFor(i.enhanced, 0, _ShadeFull), shadow, _ShadeFull);
+                    return fixed4(Mw2Fog(lit + albedo * extraLight, i.fogDepth), 1);
+                }
                 if (_UsePalette > 0.5 && type == 4) return fixed4(i.color.rgb * (1 + extraLight), 1);
                 if (_UsePalette > 0.5 && type == 1)
                 {

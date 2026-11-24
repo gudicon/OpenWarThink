@@ -19,6 +19,9 @@ namespace MW2
     {
         public float Radius;                // metres
         public Color Color = new Color(0.6f, 0.6f, 0.6f);
+        /// <summary>Made only for a graphics mod's lighting ("lights": "always", Multiple Lights off): the original's
+        /// shaders never see it.</summary>
+        public bool ModernOnly;
 
         const int Max = 16;
         static readonly List<Mw2PointLight> s_lights = new List<Mw2PointLight>();
@@ -49,15 +52,29 @@ namespace MW2
             // (DAT_10097cb8, main menu).
             foreach (var l in s_lights)
             {
-                if (l == null || n >= Max || !Mw2Options.MultipleLights) continue;
-                var p = l.transform.position;
-                s_positions[n] = new Vector4(p.x, p.y, p.z, l.Radius);
-                s_colors[n] = l.Color;
-                n++;
+                if (l == null || n >= Max || l.ModernOnly || !Mw2Options.MultipleLights) continue;
+                Put(l, n++);
             }
+            int original = n;
+            // A graphics mod's lighting also takes the lights made for it alone, after the original's
+            // (_Mw2PointCountModern); the original's shaders read only the first _Mw2PointCount.
+            if (Mw2Graphics.DynamicLights)
+                foreach (var l in s_lights)
+                {
+                    if (l == null || n >= Max || !l.ModernOnly) continue;
+                    Put(l, n++);
+                }
             Shader.SetGlobalVectorArray("_Mw2PointPos", s_positions);
             Shader.SetGlobalVectorArray("_Mw2PointColor", s_colors);
-            Shader.SetGlobalFloat("_Mw2PointCount", n);
+            Shader.SetGlobalFloat("_Mw2PointCount", original);
+            Shader.SetGlobalFloat("_Mw2PointCountModern", n);
+        }
+
+        static void Put(Mw2PointLight l, int n)
+        {
+            var p = l.transform.position;
+            s_positions[n] = new Vector4(p.x, p.y, p.z, l.Radius);
+            s_colors[n] = l.Color;
         }
     }
 }

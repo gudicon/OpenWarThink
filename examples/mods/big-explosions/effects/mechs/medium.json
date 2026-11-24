@@ -1,0 +1,9 @@
+{
+  // Medium mechs (40-55 t): a fireball that climbs into a mushroom, a dust ring, burning chunks; the wreck burns for ten seconds.
+  "death":      {"hideOriginal": true, "prefab": {"bundle": "booms", "asset": "MechDeath", "life": 2.0, "scale": 1.0}},
+  "burst":      {"hideOriginal": true, "prefab": {"bundle": "booms", "asset": "WreckBurst", "life": 0.5, "scale": 1.0}},
+  "section":    {"prefab": {"bundle": "booms", "asset": "SectionBlow", "life": 0.6, "scale": 1.0}},
+  "blowApart":  {"prefab": {"bundle": "booms", "asset": "BlowApart", "life": 1.0, "scale": 1.0}},
+  "partBlast":  {"hideOriginal": true, "prefab": {"bundle": "booms", "asset": "WreckBurst", "life": 0.5, "scale": 0.65}},
+  "debris":     {"hideOriginal": true, "prefab": {"bundle": "booms", "asset": "DebrisTrail", "life": 0.3, "scale": 1.0}}
+}

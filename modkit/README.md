@@ -26,6 +26,9 @@ medium lasers) or a family (all lasers).
 Mech explosions: the large explosion when a mech is destroyed, the smaller ones on the wreck after it, an arm or a leg
 blown off, and a wreck that breaks apart when it lands, for one mech, a weight class or every mech.
 
+The picture: smoother edges, calmer distant textures, the fog distance, colour, sharpness and glow of the 3D view
+(see "Picture settings" below; no Unity needed).
+
 A look changes pictures only. Damage, heat, range, speed, rate of fire, sounds, splash damage and debris stay as in
 the original game, and a mod cannot change who gets hit or how a mech dies. Mods for sounds, music, mech paint and weapon numbers are
 planned but do not exist yet.
@@ -123,7 +126,10 @@ example, to put an explosion pack on missile hits:
 
 The shot keeps flying as in the game; only the hit changes. Scripts in the prefab are taken off (bundles carry no
 code), so a part that needed one (a flickering light, a camera shake) is lost; the rest plays, and the game removes the
-copy when its particles are gone. The original sound of the hit stays, so a sound in the prefab plays on top of it.
+copy when its particles are gone. Many pack explosions have **Play On Awake** off and a script that starts them: when
+none of a prefab's particle systems plays on awake, the game starts them itself (all but sub-emitters), as such a script
+does. Turn **Looping** off for an explosion, or every copy stays for 30 seconds. Step 3 lists what will act otherwise in
+the game under **IN THE GAME**. The original sound of the hit stays, so a sound in the prefab plays on top of it.
 Keep explosions light: an LRM20 volley places 20 of them at once.
 
 **Licences:** assets from the Asset Store are for your own projects under the Asset Store licence. Before you share a
@@ -198,7 +204,8 @@ The whole file is used; parts of different files are not mixed.
 Every part and every field is optional. A part you leave out stays as in the original game.
 
 - `hideOriginal`: on `shot`, hides the original shot model, its light and its mark on the ground; on `muzzle` and
-  `impact`, hides the original explosion and its light. Sound, splash damage and debris stay either way.
+  `impact`, hides the original explosion and its light, and on `impact` also the small pieces a missile or autocannon
+  hit throws (they are only a picture). Sound and splash damage stay either way.
 
 ### `prefab`
 
@@ -245,7 +252,9 @@ The test range shows the names it tries for the nearest target.
                  "light": { "color": "#ffa040", "range": 40, "intensity": 2, "time": 1.5 } },
   "burst":     { "hideOriginal": true, "prefab": { "bundle": "../weapons/mymod", "asset": "MyHit", "scale": 1.2 } },
   "section":   { "prefab": { "bundle": "../weapons/mymod", "asset": "MyHit", "scale": 1.5 } },
-  "blowApart": { "sparks": { "count": 60, "spread": 180, "speed": 20 } }
+  "blowApart": { "sparks": { "count": 60, "spread": 180, "speed": 20 } },
+  "partBlast": { "hideOriginal": true, "prefab": { "bundle": "../weapons/mymod", "asset": "MyHit", "scale": 0.6 } },
+  "debris":    { "hideOriginal": true, "prefab": { "bundle": "../weapons/mymod", "asset": "MyTrail", "life": 0.3 } }
 }
 ```
 
@@ -255,12 +264,19 @@ The test range shows the names it tries for the nearest target.
 | `burst` | each smaller explosion on the wreck, for about 10 seconds after | near the mech's middle |
 | `section` | an arm, a leg, a side or the centre torso is blown off | in the middle of the part that comes off |
 | `blowApart` | the wreck lands hard and its remaining parts fly off | at the mech's middle |
+| `partBlast` | a part that flew off (an arm, a leg, a torso) is shot or blasted apart | at the part's middle |
+| `debris` | the wreck's explosions throw small pieces | rides with each piece while it flies |
 
 - **Prefabs stand upright**: +Y up, +Z the way the mech faces (unlike impacts, whose +Z points back at the shooter).
   Most explosions from packs are made this way.
 - **Sparks** fly up in a cone of `spread` degrees; 180 sends them every way.
-- `hideOriginal` on `death` and `burst` hides the game's own explosion and its light. The sound, the splash damage, the
-  debris thrown and the parts flying off stay. `section` and `blowApart` have no explosion of their own in the game.
+- `hideOriginal` on `death`, `burst` and `partBlast` hides the game's own explosion and its light. The sound, the splash
+  damage, the debris thrown and the parts flying off stay. `section` and `blowApart` have no explosion of their own in
+  the game.
+- `debris` takes only `hideOriginal` and `prefab`. `hideOriginal` leaves out the game's pixel smoke behind each piece;
+  the pieces themselves still fly. The prefab follows the piece (upright, it does not spin with it) — give it particles
+  that stay in World space, emitted by distance, for a trail. Where the piece stops, its particles stop emitting and it
+  fades over `life` seconds.
 - The mech dies exactly as in the game: when, how long the explosions go on and what they hit do not change.
 
 ## Without Unity: JSON-only looks
@@ -278,6 +294,101 @@ are `.png` or `.jpg` files next to the JSON; they are drawn added to what is beh
 
 If you write a name the game does not know, it tells you in red in the top left corner, with the list of names it
 knows there. A value out of range is replaced by the nearest allowed one, with a warning.
+
+## Picture settings: `graphics/quality.json`
+
+A mod can also change how the 3D world is drawn, with no Unity at all: put `graphics/quality.json` into the mod
+folder. Every name is optional; a name you leave out stays as in the original game.
+
+```json
+{
+  "antiAliasing": 8,       // 0, 2, 4 or 8 samples on polygon edges
+  "textureSamples": 4,     // 1..8: far textures stop shimmering (1 = original)
+  "fogDistance": 1,        // 0.25..8: factor on the mission's fog distance
+  "brightness": 1, "contrast": 1.12, "saturation": 1.1, "gamma": 1,
+  "sharpen": 0.25,         // 0..2
+  "vignette": 0.2,         // 0..1
+  "bloom": { "intensity": 0.5, "threshold": 0.75, "soft": 0.5, "radius": 5 }
+}
+```
+
+- Only the look changes: the HUD, the menus, the rules, the sensors and the frame rate stay as they are. Fades to and
+  from black and the infrared view still work.
+
+### Modern lighting
+
+Add a `lighting` section to the same file to light the world the modern way, with the mission's own sun and sky:
+metal with highlights, real sun shadows, darker corners (ambient occlusion) and the sky seen in surfaces. Night
+missions stay dark. The infrared view keeps the original light.
+
+```json
+"lighting": {
+  "sun": 1.15, "sky": 1.0,        // 0..4: factors on the mission's sun and sky light
+  "fill": 0.35,                   // 0..2: the mission's second light, set against the sun (lights the shaded side)
+  "bounce": 0.35,                 // 0..1: light from the ground below
+  "reflections": 1.0,             // 0..2: the sky seen in surfaces
+  "shadows": 0.75,                // 0..1: strength of sun shadows (they replace the flat shadows under units)
+  "shadowDistance": 350,          // 20..2000 metres
+  "occlusion": 0.55,              // 0..1: darker corners and contacts
+  "occlusionRadius": 1.5,         // 0.2..10 metres
+  "units":      { "metallic": 0.25, "roughness": 0.45 },   // mechs and vehicles
+  "structures": { "metallic": 0.0,  "roughness": 0.75 },   // buildings and the rest
+  "ground":     { "metallic": 0.0,  "roughness": 0.95 }
+}
+```
+
+Two more parts of the section:
+
+```json
+"probe": { "enabled": true, "resolution": 256, "facesPerFrame": 1 },   // the world seen in the surfaces
+"lights": { "intensity": 1.5, "range": 0.2, "always": true }           // light of shots in flight and explosions
+```
+
+More parts of the section, and a picture setting beside it:
+
+```json
+"rays": { "intensity": 0.6, "decay": 0.96, "length": 0.6 },          // sun rays through gaps in clouds and buildings
+"ssr": { "intensity": 1.0, "distance": 150, "thickness": 2 },        // reflections of the world on smooth surfaces
+"emissive": 2.0                                                      // fire, explosions and glows brighter
+```
+
+```json
+"hdr": { "exposure": 1.0, "tonemapping": "aces" }   // top level: light above white is kept, then tonemapped
+```
+
+With `hdr` on, a bloom `threshold` above 1 makes only the really bright light glow. Screen-space reflections only show
+on smooth surfaces: lower a surface's `roughness` to see more of them.
+
+The probe looks around from the camera a face or a few at a time (higher `facesPerFrame` reacts faster and costs
+more). `lights` makes the game's own shot and explosion lights round and soft; `range` is a factor on their size, and
+`always` turns them on even when Multiple Lights is off in the game's options.
+
+Mechs and vehicles can have a different surface for each kind of part. The game tells the parts apart by its own
+textures: painted plates, bare metal, vents and grilles, weapon textures and the windshields:
+
+```json
+"unitParts": {
+  "paint":     { "metallic": 0.05, "roughness": 0.55 },                  // painted armour and insignia
+  "metal":     { "metallic": 0.75, "roughness": 0.4 },                   // bare metal
+  "mechanics": { "metallic": 0.45, "roughness": 0.75, "albedo": 0.8 },   // vents, ribs, grilles (a bit darker)
+  "weapons":   { "metallic": 0.6,  "roughness": 0.35 },                  // weapon textures
+  "glass":     { "metallic": 0.0,  "roughness": 0.1 },                   // cockpit windshields
+  "rows": "weapons"                                                      // faces in a plain palette colour: barrels, trims
+},
+"contactShadows": { "strength": 0.6, "length": 1.5 }                     // small sun shadows under feet, in joints
+```
+
+Each class may list its own `textures` by the names of the game's CEL files, with `*` for any letters and `?` for one
+(the defaults: paint `PLATE*`, `TH*`; metal `SSMETSU*`, `SLMETSPC`, `SLPLAINC`; mechanics `S?VENT*`, `S?VERT*`,
+`S?MESH`, `SLHORIC`; weapons `SWEP*`; glass `*CLOU`). A class the file does not name, and every other face, takes
+`units`.
+
+`"enabled": false` in the section turns it off again. Strong metal (above 0.5) darkens the painted textures, because
+there is no detailed world around to reflect.
+- The game reads the file again within half a second when you save it, also in the middle of a mission.
+- If two active mods have the file, the one lower in the list wins as a whole.
+- A `fogDistance` above 1 lets players see farther than the mission intends; in a network game everybody needs the
+  same mods anyway.
 
 ## Testing
 
@@ -323,6 +434,8 @@ knows there. A value out of range is replaced by the nearest allowed one, with a
 | "no file mymod (or mymod.windows, .mac, .linux)" | the bundle is not next to the JSON file, or `bundle` is misspelled |
 | a list of names after the prefab's name | `asset` does not match any prefab in the bundle; the list shows the ones it has |
 | "taken off: BoxCollider" (or similar) | the prefab has a component a look may not have; remove it from the prefab |
+| the hit shows nothing, the log has "The referenced script (…) is missing" | that is the pack's script, which a bundle cannot carry; it is harmless. Before version 0.7.1 the game did not start particle systems that a script started: turn **Play On Awake** on for them, press **3** |
+| an explosion stays on the ground for half a minute | its particle systems loop: turn **Looping** off and press **3** |
 | nothing changes | the mod is OFF or not accepted on the Mods screen, or a more exact file of a mod lower in the list wins (the range shows which file is used) |
 | pink beams or particles | a renderer has no material, or its material's shader does not work in the game. The kit checks every bundle it builds for your own platform and refuses one with missing materials, naming the prefab and the renderer; use built-in shaders |
 | white or grey squares instead of soft particles | the particle material has no texture: give it one (a round soft dot, like `glow.png` of the examples) |

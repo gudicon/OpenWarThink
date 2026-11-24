@@ -223,6 +223,7 @@ namespace MW2
         bool _ending;
         Vector3 _end;
         Action _then;
+        Transform _target;
 
         internal void Setup(WeaponLook.PrefabLook look)
         {
@@ -257,6 +258,16 @@ namespace MW2
             _from = muzzle != null ? muzzle.Position : transform.position;
             if (_stretch) foreach (var l in _lines) l.R.useWorldSpace = true;
             LateUpdate();
+        }
+
+        /// <summary>
+        /// Keeps the copy at <paramref name="target"/>'s position every frame, without its turn or scale (a debris piece
+        /// spins and carries its model scale), until <see cref="Release"/>.
+        /// </summary>
+        public void Follow(Transform target)
+        {
+            _target = target;
+            if (target != null) transform.position = target.position;
         }
 
         /// <summary>The shot ended at <paramref name="point"/>: stop emitting, then fade out. A copy riding on the shot stays
@@ -295,6 +306,7 @@ namespace MW2
 
         void LateUpdate()
         {
+            if (_target != null && !_ending && _released < 0f) transform.position = _target.position;
             if (_muzzle != null) _from = _muzzle.Position;
             if (_riding) foreach (var m in _muzzles) if (m != null) m.position = _from;
             float k = Strength();

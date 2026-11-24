@@ -37,6 +37,7 @@ Shader "MW2/Sprite"
             sampler2D _MainTex;
             float4 _MainTex_TexelSize;
             float4 _Color;
+            float _Mw2Modern, _Mw2Emissive, _Mw2Infrared;   // graphics mods only (Mw2Graphics): bright sprite pixels brighter for HDR
 
             struct appdata { float4 vertex : POSITION; float2 uv : TEXCOORD0; float3 e : TEXCOORD2; float2 corner : TEXCOORD3;
                 float2 enhanced : TEXCOORD4; float3 original : TEXCOORD5; };
@@ -78,7 +79,10 @@ Shader "MW2/Sprite"
                 }
                 fixed4 tex = Mw2SampleMain(_MainTex, _MainTex_TexelSize, i.uv);
                 clip(tex.a - 1.0 / 255.0);
-                return fixed4(Mw2Fog(tex.rgb * _Color.rgb, i.fogDepth), tex.a * _Color.a);
+                float3 col = tex.rgb * _Color.rgb;
+                if (_Mw2Modern > 0.5 && _Mw2Emissive > 1 && _Mw2Infrared < 0.5)
+                    col *= lerp(1, _Mw2Emissive, smoothstep(0.55, 0.95, dot(col, float3(0.299, 0.587, 0.114))));
+                return fixed4(Mw2Fog(col, i.fogDepth), tex.a * _Color.a);
             }
             ENDCG
         }

@@ -1,0 +1,6 @@
+{
+  // Long-range missiles come in salvos of up to 20: lighter trails and smaller blasts.
+  "shot":    {"hideOriginal": true, "prefab": {"bundle": "arsenal", "asset": "MissileLong", "life": 0.3}},
+  "muzzle":  {"hideOriginal": true, "prefab": {"bundle": "arsenal", "asset": "Launch", "life": 0.2, "scale": 0.7}},
+  "impact":  {"hideOriginal": true, "prefab": {"bundle": "arsenal", "asset": "Blast", "life": 0.5, "scale": 0.7}}
+}

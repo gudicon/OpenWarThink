@@ -1,0 +1,6 @@
+{
+  // Gauss rifles: a white-hot slug with an ion trail; a blue ring at the muzzle; a heavy hit.
+  "shot":    {"hideOriginal": true, "prefab": {"bundle": "arsenal", "asset": "GaussSlug", "life": 0.2}},
+  "muzzle":  {"hideOriginal": true, "prefab": {"bundle": "arsenal", "asset": "GaussMuzzle", "life": 0.2}},
+  "impact":  {"hideOriginal": true, "prefab": {"bundle": "arsenal", "asset": "GaussHit", "life": 0.35}}
+}

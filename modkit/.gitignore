@@ -6,8 +6,10 @@
 /[Uu]ser[Ss]ettings/
 *.csproj
 *.sln
-/[Aa]ssets/MyMod/
-/[Aa]ssets/MyMod.meta
+# Your prefabs and the packs you import (Asset Store packs may not be shared): only the kit itself is kept
+/[Aa]ssets/*
+!/[Aa]ssets/ModKit/
+!/[Aa]ssets/ModKit.meta
 /Packages/packages-lock.json
 /ProjectSettings/*.asset
 /ProjectSettings/*.json

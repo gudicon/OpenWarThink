@@ -49,8 +49,8 @@ namespace MW2
                     continue;
                 }
                 // Keep the cockpit representation above; all external units, including wrecks,
-                // use REPR1 at every distance while this mod rule is active.
-                if (Mw2ModRules.Current.MaxMechDetail)
+                // use REPR1 at every distance while a mod asks for it (graphics/detail.json).
+                if (Mw2ModRules.Detail.MaxMechDetail)
                 {
                     _units.Add((group, 0, 0));
                     continue;

@@ -1318,7 +1318,7 @@ namespace MW2
                     if (r.TryGetComponent<MeshCollider>(out var part)) part.enabled = false;
                 var mesh = Mw2LodGroup.NodeMesh(node, lods);
                 if (mesh != null && map.Nodes.Contains(node) && fx != null &&
-                    fx.ThrowPart(node, lods, Mw2LodGroup.Radius(mesh.sharedMesh), mesh.sharedMesh.bounds.center)) continue;
+                    fx.ThrowPart(node, lods, Mw2LodGroup.Radius(mesh.sharedMesh), mesh.sharedMesh.bounds.center, this)) continue;
                 foreach (var r in own)
                     if (lods != null) lods.Hide(r); else r.enabled = false;
             }
@@ -1570,7 +1570,7 @@ namespace MW2
             origin.z += (int)Mw2Effects.Gauss() / 2 * units;
             if (fx == null) return;
             int code = UnityEngine.Random.Range(0, 100) < 0x3c ? 3 : 0x10b;
-            fx.Spawn(code, origin, null, null, _killer, code != 3 || Mw2UnitView.Burst(this, origin));
+            fx.Spawn(code, origin, null, null, _killer, code != 3 || Mw2UnitView.Burst(this, origin), debrisOf: this);
         }
 
         /// <summary>

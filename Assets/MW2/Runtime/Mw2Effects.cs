@@ -71,6 +71,8 @@ namespace MW2
             [System.NonSerialized] public bool Moving;
             [System.NonSerialized] public Vector3 Velocity;     // units per tick
             [System.NonSerialized] public Vector3 Spin;         // degrees per tick
+            [System.NonSerialized] public bool Smokes = true;   // debris: the original smoke trail (a look mod may leave it out)
+            [System.NonSerialized] public System.Action Landed; // debris: a look mod's picture riding on the piece lets go
         }
 
         public List<EffectDef> Defs = new List<EffectDef>();
@@ -124,10 +126,14 @@ namespace MW2
         /// 0x10011ea8: start the effect of <paramref name="code"/> at <paramref name="point"/>. With
         /// <paramref name="visible"/> false (a port extension draws it instead, Mw2WeaponView) everything runs as usual
         /// (slot, duration, sound, sun flash, area damage, debris) but the slot's model is not drawn and no light or ground
-        /// glow starts.
+        /// glow starts. With <paramref name="debris"/> false the missile hit throws no debris pieces (code 0x10b,
+        /// 0x10011e0b): a weapon look that hides the original hit hides them too, since they are only a picture. The
+        /// same goes for a hit whose own effect is the debris (type 0xb, the autocannons): hidden, it throws nothing.
+        /// <paramref name="debrisOf"/> (port addition): the wreck whose explosions throw the debris, so a destruction look
+        /// of that unit (Mw2UnitView.DebrisThrown) can draw the pieces' trail; the pieces fly as usual.
         /// </summary>
         public void Spawn(int code, Vector3 point, Transform hitUnit = null, Transform muzzle = null, Mw2MechCombat owner = null,
-                          bool visible = true)
+                          bool visible = true, bool debris = true, Mw2MechCombat debrisOf = null)
         {
             if (code < 0) return;
             int id = code & 0xff;
@@ -160,13 +166,15 @@ namespace MW2
                     if ((code & 0x400) != 0) id = 0x15;
                     break;
                 case 0xb:
-                    Debris(point, (code & 0x1000) != 0 ? 0x10 : (code & 0x300) != 0 ? 4 : 8);
+                    // Type 0xb has no sound, sun flash or area damage (record +0x08 = -1, +0x10 = 0, +0x18 = 0): the
+                    // pieces are only a picture, so a weapon look that hides the hit (autocannons hit with 0xb) hides them.
+                    if (visible && debris) Debris(point, (code & 0x1000) != 0 ? 0x10 : (code & 0x300) != 0 ? 4 : 8, debrisOf);
                     return;
             }
             int baseId = code & 0xff;
             bool light = baseId == 3 || baseId == 0x22 || baseId == 0x23 || baseId == 6;
             StartSlot(id, code, point, hitUnit, muzzle, owner, light, visible);
-            if (debrisToo) Spawn(0x10b, point, null, null, owner);     // 0x10011e0b
+            if (debrisToo && debris) Spawn(0x10b, point, null, null, owner, debrisOf: debrisOf);     // 0x10011e0b
         }
 
         void StartSlot(int id, int code, Vector3 point, Transform hitUnit, Transform muzzle, Mw2MechCombat owner, bool light = false,
@@ -230,9 +238,10 @@ namespace MW2
             var go = new GameObject("MW2 explosion light");
             go.transform.SetParent(transform, false);
             go.transform.position = point;
-            if (Mw2Options.MultipleLights)
+            if (Mw2Options.MultipleLights || Mw2Graphics.DynamicLights)
             {
                 var pl = go.AddComponent<Mw2PointLight>();
+                pl.ModernOnly = !Mw2Options.MultipleLights;     // graphics mods only (Mw2Graphics.DynamicLights)
                 pl.Radius = 20000f * Units;
                 pl.Color = new Color(0.6f, 0.6f, 0.2f);
                 _lights.Add(new FlashLight { Light = pl, Life = life });
@@ -380,6 +389,7 @@ namespace MW2
             public bool Moving;
             public int Born;
             public float Health; // record +0xc: 16 at Part_Throw 0x10014de1
+            public Mw2MechCombat Unit;  // whose part it was (port addition: the destruction look of Mw2UnitView.PartBlast)
         }
 
         readonly List<PartPiece> _parts = new List<PartPiece>();
@@ -391,13 +401,13 @@ namespace MW2
         /// Returns false when no record or debris slot is free: then the caller hides the node. Record +0xc starts with
         /// 16 hit points (0x10014de1); Part_Damage 0x10015082 destroys it strictly below zero via 0x10014fba.
         /// </summary>
-        public bool ThrowPart(Transform node, Mw2LodGroup lods, float radius, Vector3 localCentre)
+        public bool ThrowPart(Transform node, Mw2LodGroup lods, float radius, Vector3 localCentre, Mw2MechCombat unit = null)
         {
             int moving = 0;
             foreach (var s in Slots) if (s.Active && s.Moving) moving++;
             foreach (var p in _parts) if (p.Moving) moving++;
             if (_parts.Count >= 0x80 || moving >= 0x80) return false;
-            var piece = new PartPiece { Node = node, Lods = lods, Radius = radius, LocalCentre = localCentre, Moving = true, Born = _now, Health = 16f };
+            var piece = new PartPiece { Node = node, Lods = lods, Radius = radius, LocalCentre = localCentre, Moving = true, Born = _now, Health = 16f, Unit = unit };
             Throw(out piece.Velocity, out piece.Spin);
             node.SetParent(null, true);
             // Shot_Move 0x10010f40 reaches Part_Damage only when the thrown model (flags 0x50)
@@ -462,14 +472,15 @@ namespace MW2
             p.Health -= damage;
             if (p.Health >= 0f) return;
             // Part_ShotApart 0x10014fba starts effect 7 at the model centre, then releases the debris record.
+            // A destruction look of the part's unit may draw this explosion instead (Mw2UnitView); the effect runs either way.
             var centre = p.Node.TransformPoint(p.LocalCentre);
-            Spawn(7, centre);
+            Spawn(7, centre, visible: Mw2UnitView.PartBlast(p.Unit, centre));
             HidePart(p);
             _parts.RemoveAt(index);
         }
 
         /// <summary>0x1001314a: throw up to <paramref name="count"/> free CHUNKER pieces from the point.</summary>
-        void Debris(Vector3 point, int count)
+        void Debris(Vector3 point, int count, Mw2MechCombat of)
         {
             if (Defs.Count <= 0xb) return;
             int thrown = 0;
@@ -484,6 +495,8 @@ namespace MW2
                 Throw(out s.Velocity, out s.Spin);
                 s.Model.transform.SetPositionAndRotation(point, Quaternion.identity);
                 s.Model.SetActive(true);
+                Land(s);
+                s.Smokes = Mw2UnitView.DebrisThrown(of, s.Model.transform, out s.Landed);
                 thrown++;
             }
         }
@@ -522,6 +535,7 @@ namespace MW2
                     s.Active = false;
                     s.Moving = false;
                     s.Follow = null;
+                    Land(s);
                     if (s.Model != null) s.Model.SetActive(false);
                     var anim = Mw2TextureAnimator.Instance;
                     if (anim != null && s.Key > 0) { anim.SetSpeed(s.Key, 0); anim.Restart(s.Key, 0); }
@@ -594,8 +608,19 @@ namespace MW2
             var t = s.Model.transform;
             var start = t.position;
             bool stop = StepDebris(t, start, ref s.Velocity, ref s.Spin, s.Radius, dt);
-            if (stop) s.Moving = false;
-            else SmokeGroup.Start(this, start, t.position - start, debris: true);
+            if (stop) { s.Moving = false; Land(s); }
+            else if (s.Smokes) SmokeGroup.Start(this, start, t.position - start, debris: true);
+        }
+
+        /// <summary>A debris piece stopped or its slot ended: a look mod's picture riding on it lets go (once).</summary>
+        static void Land(Slot s)
+        {
+            var landed = s.Landed;
+            s.Landed = null;
+            s.Smokes = true;
+            if (landed == null) return;
+            try { landed(); }
+            catch (System.Exception e) { Debug.LogException(e); }
         }
 
         /// <summary>

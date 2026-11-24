@@ -24,17 +24,44 @@ float Mw2TexelIndex(sampler2D tex, float2 uv)
 
 // Glide filters palette textures after the palette lookup (grTexFilterMode BILINEAR): four texels, four colours, mixed.
 // texel = _MainTex_TexelSize (x, y = 1 / size, z, w = size). A texture of colours (own palette CELs) is sampled as it is.
+float4 Mw2SampleBilinear(sampler2D tex, float4 texel, float2 uv)
+{
+    float4 result;
+    if (_Paletted < 0.5) result = tex2Dlod(tex, float4(uv, 0, 0));    // the colour textures have no mipmaps
+    else
+    {
+        float2 p = uv * texel.zw - 0.5;
+        float2 f = frac(p);
+        float2 b = (floor(p) + 0.5) * texel.xy;
+        float3 c00 = Mw2PaletteColor(Mw2TexelIndex(tex, b));
+        float3 c10 = Mw2PaletteColor(Mw2TexelIndex(tex, b + float2(texel.x, 0)));
+        float3 c01 = Mw2PaletteColor(Mw2TexelIndex(tex, b + float2(0, texel.y)));
+        float3 c11 = Mw2PaletteColor(Mw2TexelIndex(tex, b + texel.xy));
+        result = float4(lerp(lerp(c00, c10, f.x), lerp(c01, c11, f.x), f.y), 1);
+    }
+    return result;
+}
+
+// Graphics mods only (GraphicsQuality "textureSamples", Mw2Graphics): up to n bilinear samples along each screen axis,
+// spread over the pixel's footprint in the texture, are averaged. 1 (the default) is one sample, as Glide.
+float _Mw2TexSamples;
+
 float4 Mw2SampleMain(sampler2D tex, float4 texel, float2 uv)
 {
-    if (_Paletted < 0.5) return tex2D(tex, uv);
-    float2 p = uv * texel.zw - 0.5;
-    float2 f = frac(p);
-    float2 b = (floor(p) + 0.5) * texel.xy;
-    float3 c00 = Mw2PaletteColor(Mw2TexelIndex(tex, b));
-    float3 c10 = Mw2PaletteColor(Mw2TexelIndex(tex, b + float2(texel.x, 0)));
-    float3 c01 = Mw2PaletteColor(Mw2TexelIndex(tex, b + float2(0, texel.y)));
-    float3 c11 = Mw2PaletteColor(Mw2TexelIndex(tex, b + texel.xy));
-    return float4(lerp(lerp(c00, c10, f.x), lerp(c01, c11, f.x), f.y), 1);
+    float2 dx = ddx(uv), dy = ddy(uv);
+    float4 result;
+    if (_Mw2TexSamples < 1.5) result = _Paletted < 0.5 ? tex2D(tex, uv) : Mw2SampleBilinear(tex, texel, uv);
+    else
+    {
+        int nx = (int)clamp(ceil(length(dx * texel.zw)), 1, _Mw2TexSamples);
+        int ny = (int)clamp(ceil(length(dy * texel.zw)), 1, _Mw2TexSamples);
+        float4 sum = 0;
+        [loop] for (int a = 0; a < nx; a++)
+            [loop] for (int b = 0; b < ny; b++)
+                sum += Mw2SampleBilinear(tex, texel, uv + ((a + 0.5) / nx - 0.5) * dx + ((b + 0.5) / ny - 0.5) * dy);
+        result = sum / (nx * ny);
+    }
+    return result;
 }
 
 #endif

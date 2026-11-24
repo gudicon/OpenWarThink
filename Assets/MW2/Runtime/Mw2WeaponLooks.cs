@@ -51,6 +51,7 @@ namespace MW2
             Mw2UnitView.Current = new Mw2ModUnitView();
             Mw2Mods.Changed += Forget;
             Mw2ModRules.Apply();
+            Mw2Graphics.Apply();
             Mw2Lang.Apply();
         }
 
@@ -72,6 +73,7 @@ namespace MW2
             s_materials.Clear();
             Mw2ModPrefabs.Forget();
             Mw2ModRules.Apply();
+            Mw2Graphics.Apply();
             Mw2Lang.Apply();
             if (s_host != null) s_host._signature = null;
         }
@@ -340,6 +342,7 @@ namespace MW2
 
         void Update()
         {
+            Mw2Graphics.Tick();
             if (Time.realtimeSinceStartup < _nextPoll) return;
             _nextPoll = Time.realtimeSinceStartup + 0.5f;
             string now = Signature();
@@ -353,11 +356,12 @@ namespace MW2
             s_materials.Clear();
             Mw2ModPrefabs.Forget();
             Mw2ModRules.Apply();
+            Mw2Graphics.Apply();
             Mw2Lang.Apply();
             ReportAll();
         }
 
-        /// <summary>Names, sizes and times of the files in the effects, rules and lang folders of the active mods.</summary>
+        /// <summary>Names, sizes and times of the files in the effects, rules, lang and graphics folders of the active mods.</summary>
         static string Signature()
         {
             var sb = new StringBuilder();
@@ -367,7 +371,7 @@ namespace MW2
             foreach (var m in catalog.Active)
             {
                 sb.Append(m.Id).Append('|');
-                foreach (string folder in new[] { "effects", "rules", "lang" })
+                foreach (string folder in new[] { "effects", "rules", "lang", "graphics" })
                 {
                     string dir = Path.Combine(m.Folder, folder);
                     try

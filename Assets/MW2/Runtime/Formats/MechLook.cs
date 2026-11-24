@@ -13,16 +13,29 @@ namespace MW2.Formats
     /// unit's origin); "burst" — each of the smaller explosions over the next 10 seconds (effect 3; the debris throws in
     /// between, effect 0x10b, stay as they are); "section" — a section blown off (an arm, a leg, the centre torso; the
     /// original draws nothing of its own there, only the thrown parts); "blowApart" — a dead unit that lands hard throws its
-    /// remaining parts (Mech_BlowApart 0x1003551a). hideOriginal hides the original explosion model and its light; the sound,
-    /// sun flash, area damage and debris stay. Prefabs stand upright: +Y up, +Z the unit's forward. Only the look changes.
+    /// remaining parts (Mech_BlowApart 0x1003551a); "partBlast" — a thrown-off part that is shot or blasted apart in the
+    /// air or on the ground (Part_ShotApart 0x10014fba, effect 7 at the part's centre). hideOriginal hides the original
+    /// explosion model and its light; the sound, sun flash, area damage and debris stay. Prefabs stand upright: +Y up, +Z the
+    /// unit's forward. A fifth part, "debris", is for the small pieces the wreck throws (effect 0x10b from the explosions on
+    /// the wreck, Debris_Move 0x100150c7): "hideOriginal" leaves out their pixel smoke trail, and "prefab" (bundle, asset,
+    /// life, scale) rides upright with each piece while it flies and lets go where it stops (its particles stop emitting, then
+    /// it fades over "life"). The pieces themselves, their number and their flight stay. Only the look changes.
     /// Port addition with no counterpart in the original program.
     /// </summary>
     public sealed class MechLook
     {
         public const string Folder = "effects/mechs";
 
+        /// <summary>The "debris" part: the pieces thrown by the wreck.</summary>
+        public sealed class DebrisLook
+        {
+            public bool HideOriginal;       // the pixel smoke trail of a flying piece (0x1004e460)
+            public WeaponLook.PrefabLook Prefab;
+        }
+
         public string Source;           // full path of the JSON file
-        public WeaponLook.FlashLook Death, Burst, Section, BlowApart;
+        public WeaponLook.FlashLook Death, Burst, Section, BlowApart, PartBlast;
+        public DebrisLook Debris;
         public readonly List<string> Warnings = new List<string>();
 
         /// <summary>
@@ -64,11 +77,20 @@ namespace MW2.Formats
             if (!(MiniJson.Parse(text) is Dictionary<string, object> root))
                 throw new MiniJson.Error("the file must hold one { ... } object");
             var r = new WeaponLook.Reader(look.Warnings, source != null ? Path.GetDirectoryName(source) : null);
-            r.Known(root, "", "death", "burst", "section", "blowApart", "comment");
+            r.Known(root, "", "death", "burst", "section", "blowApart", "partBlast", "debris", "comment");
             look.Death = r.Flash(root, "death");
             look.Burst = r.Flash(root, "burst");
             look.Section = r.Flash(root, "section");
             look.BlowApart = r.Flash(root, "blowApart");
+            look.PartBlast = r.Flash(root, "partBlast");
+            var debris = r.Object(root, "debris", "debris");
+            if (debris != null)
+            {
+                r.Known(debris, "debris", "hideOriginal", "prefab", "comment");
+                look.Debris = new DebrisLook { HideOriginal = r.Flag(debris, "hideOriginal", "debris", false) };
+                var prefab = r.Object(debris, "prefab", "debris.prefab");
+                if (prefab != null) look.Debris.Prefab = r.Prefab(prefab, "debris.prefab", false);
+            }
             return look;
         }
     }

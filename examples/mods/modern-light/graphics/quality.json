@@ -1,0 +1,57 @@
+{
+  // Picture
+  "antiAliasing": 8,
+  "textureSamples": 4,
+  "contrast": 1.0,
+  "saturation": 1.12,
+  "sharpen": 0.2,
+  "vignette": 0.15,
+  "bloom": { "intensity": 0.5, "threshold": 1.0, "soft": 0.5, "radius": 5 },   // threshold above 1: only HDR light glows
+
+  // High dynamic range: light above white is kept and brought back by the tonemapping
+  "hdr": { "exposure": 1.7, "tonemapping": "reinhard" },   // a soft curve: shadows keep their detail, the sky is not burnt out
+
+  // Modern lighting with the mission's own sun and sky (the infrared view keeps the original light)
+  "lighting": {
+    "sun": 1.0,               // factor on the mission's direction lights
+    "sky": 1.15,              // factor on its ambient light
+    "fill": 0.55,             // the mission's second light, set against the sun to light the shaded side (no highlights)
+    "bounce": 0.35,           // light from the ground below
+    "reflections": 0.8,       // the world seen in the surfaces
+    "shadows": 0.75,          // 0..1: real sun shadows (they replace the flat unit shadows)
+    "shadowDistance": 350,    // metres
+    "occlusion": 0.4,         // 0..1: darker corners and contacts
+    "occlusionRadius": 1.5,   // metres
+    "contactShadows": { "strength": 0.6, "length": 1.5 },   // small sun shadows under feet and in armour joints
+
+    "units":      { "metallic": 0.3,  "roughness": 0.4 },    // parts of mechs and vehicles no class below takes
+
+    // Parts of units by the game's own texture on the face (the default names are shown; "*" = any letters)
+    "unitParts": {
+      "paint":     { "metallic": 0.05, "roughness": 0.55 },                  // painted armour plates and insignia: PLATE*, TH*
+      "metal":     { "metallic": 0.75, "roughness": 0.4 },                   // bare metal: SSMETSU*, SLMETSPC, SLPLAINC
+      "mechanics": { "metallic": 0.45, "roughness": 0.75, "albedo": 0.8 },   // vents, ribs, grilles: S?VENT*, S?VERT*, S?MESH, SLHORIC
+      "weapons":   { "metallic": 0.6,  "roughness": 0.35 },                  // weapon textures: SWEP*
+      "glass":     { "metallic": 0.35, "roughness": 0.12 },                  // cockpit windshields: *CLOU, the glass with the world in it
+      "rows": "weapons"                                                      // faces in a palette colour: barrels, trims
+    },
+    "structures": { "metallic": 0.0,  "roughness": 0.75 },   // buildings and the rest of the world
+    "ground":     { "metallic": 0.0,  "roughness": 0.95 },
+    "cockpit":    { "metallic": 0.4,  "roughness": 0.45, "light": 0.8 },   // the cockpit frame seen from inside, lit like the world; light = share of the original flat light kept
+
+    // A reflection probe at the camera: the buildings, the ground and the sky seen in the surfaces
+    "probe": { "enabled": true, "resolution": 256, "facesPerFrame": 1 },
+
+    // Light of shots in flight and of explosions, soft and round; "always" also without Multiple Lights
+    "lights": { "intensity": 1.5, "range": 0.2, "always": true },
+
+    // Sun rays through gaps in clouds and between buildings
+    "rays": { "intensity": 0.6, "decay": 0.96, "length": 0.6 },
+
+    // Screen-space reflections on smooth surfaces (lower a surface's roughness to see more of them)
+    "ssr": { "intensity": 1.0, "distance": 150, "thickness": 2 },
+
+    // Explosions, fire and glows brighter (they glow in the HDR picture)
+    "emissive": 2.0
+  }
+}

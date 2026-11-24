@@ -116,6 +116,21 @@ namespace MW2
             _texture.SetPixels32(_colors);
             _texture.Apply();
             _fade.Changed = false;
+            FadeLevel = Level();
+        }
+
+        /// <summary>For graphics mods only (Mw2Graphics, Mw2Modern.cginc): how bright the live palette is against the palette
+        /// of its mode group, 0 (black) to 1. Lights that do not come from the palette are scaled by it, so fades still end
+        /// black. Not used by the original lighting.</summary>
+        public float FadeLevel { get; private set; } = 1f;
+
+        float Level()
+        {
+            var group = Raw(_fade.Group);
+            if (group == null) return 1f;
+            long shown = 0, full = 0;
+            for (int i = 0; i < 768; i++) { shown += _fade.Display[i]; full += group[i]; }
+            return full <= 0 ? 1f : Mathf.Clamp01((float)shown / full);
         }
 
         /// <summary>The player's combat state (for the sensors, DAT_1025f080 +6, and the destroyed state).</summary>

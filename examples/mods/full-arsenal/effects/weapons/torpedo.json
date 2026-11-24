@@ -1,0 +1,6 @@
+{
+  // Torpedoes under water: a trail of bubbles; the hit is a blast.
+  "shot":    {"hideOriginal": true, "prefab": {"bundle": "arsenal", "asset": "Torpedo", "life": 0.5}},
+  "muzzle":  {"hideOriginal": true, "prefab": {"bundle": "arsenal", "asset": "Launch", "life": 0.2}},
+  "impact":  {"hideOriginal": true, "prefab": {"bundle": "arsenal", "asset": "Blast", "life": 0.6, "scale": 1.6}}
+}

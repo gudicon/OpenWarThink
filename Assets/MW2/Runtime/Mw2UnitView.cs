@@ -23,6 +23,15 @@ namespace MW2
 
         /// <summary>The wreck landed hard and throws its remaining parts.</summary>
         void BlownApart(Mw2MechCombat unit, Vector3 origin);
+
+        /// <summary>A thrown-off part of the unit was shot or blasted apart (effect 7 at its centre); returns whether the
+        /// original explosion is drawn.</summary>
+        bool PartBlast(Mw2MechCombat unit, Vector3 point);
+
+        /// <summary>The wreck threw a small piece (effect 0x10b) that now flies as <paramref name="piece"/>; returns whether
+        /// it leaves the original smoke trail. <paramref name="landed"/>, when set, is called once when the piece stops or
+        /// its time is over.</summary>
+        bool DebrisThrown(Mw2MechCombat unit, Transform piece, out System.Action landed);
     }
 
     /// <summary>The extension that draws unit destruction, if any (port addition with no counterpart in the original program).</summary>
@@ -58,6 +67,23 @@ namespace MW2
             if (Current == null) return;
             try { Current.BlownApart(unit, origin); }
             catch (System.Exception e) { Debug.LogException(e); }
+        }
+
+        /// <summary><see cref="IUnitView.PartBlast"/>, or true (draw the original) without an extension or a unit.</summary>
+        public static bool PartBlast(Mw2MechCombat unit, Vector3 point)
+        {
+            if (Current == null || unit == null) return true;
+            try { return Current.PartBlast(unit, point); }
+            catch (System.Exception e) { Debug.LogException(e); return true; }
+        }
+
+        /// <summary><see cref="IUnitView.DebrisThrown"/>, or true (the original smoke) without an extension or a unit.</summary>
+        public static bool DebrisThrown(Mw2MechCombat unit, Transform piece, out System.Action landed)
+        {
+            landed = null;
+            if (Current == null || unit == null) return true;
+            try { return Current.DebrisThrown(unit, piece, out landed); }
+            catch (System.Exception e) { Debug.LogException(e); landed = null; return true; }
         }
     }
 }

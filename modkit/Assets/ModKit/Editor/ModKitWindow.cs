@@ -140,7 +140,7 @@ namespace OpenWarThink.ModKit
                 if (!mechs && GUILayout.Button("2. Write mod.json and effects/weapons/" + Weapons[_weapon] + ".json")) Run(() => string.Join("\n", WriteMod(Mod(), _id, _name, _author, _description, Weapons[_weapon], Bundle(_folder), (Style)_style, _impact, _scale, false)));
                 if (mechs && GUILayout.Button("2. Write mod.json and effects/mechs/" + Mechs[_mechs] + ".json")) Run(() => string.Join("\n", WriteMechMod(Mod(), _id, _name, _author, _description, Mechs[_mechs], Bundle(_folder), _impact, _mechScale, false)));
                 if (GUILayout.Button("3. Build the bundle into the mod")) Run(() => "Written:\n" + string.Join("\n", ModBundleBuilder.Build(_folder, Path.Combine(Mod(), "effects", "weapons"), Bundle(_folder), null))
-                                                                                    + Missing(Mod(), Bundle(_folder), PrefabsIn(_folder)));
+                                                                                    + Missing(Mod(), Bundle(_folder), PrefabsIn(_folder)) + Notes(ModBundleBuilder.Advice(_folder, new[] { _impact })));
             }
             if (Mod() != null && GUILayout.Button("Show the mod folder")) EditorUtility.RevealInFinder(Path.Combine(Mod(), "mod.json"));
 
@@ -182,6 +182,9 @@ namespace OpenWarThink.ModKit
             return lines.Count == 0 ? "" :
                 "\n\nWARNING:\n" + string.Join("\n", lines.Distinct()) + "\nChoose the prefab above and press 2 to write it into the effect file.";
         }
+
+        /// <summary>The builder's advice on the prefabs (ModBundleBuilder.Advice) under a heading; empty without any.</summary>
+        static string Notes(List<string> advice) => advice.Count == 0 ? "" : "\n\nIN THE GAME:\n" + string.Join("\n", advice);
 
         string Mod() => string.IsNullOrWhiteSpace(_mods) || string.IsNullOrWhiteSpace(_id) ? null : Path.Combine(_mods.Trim(), _id.Trim());
 

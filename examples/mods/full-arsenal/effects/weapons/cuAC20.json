@@ -1,0 +1,6 @@
+{
+  // The heaviest autocannon: a bigger blast.
+  "shot":    {"hideOriginal": true, "prefab": {"bundle": "arsenal", "asset": "Tracer", "life": 0.1, "scale": 1.6}},
+  "muzzle":  {"hideOriginal": true, "prefab": {"bundle": "arsenal", "asset": "MuzzleBlast", "life": 0.12, "scale": 1.6}},
+  "impact":  {"hideOriginal": true, "prefab": {"bundle": "arsenal", "asset": "ShellHit", "life": 0.3, "scale": 1.6}}
+}

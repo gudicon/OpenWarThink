@@ -1,0 +1,6 @@
+{
+  // The nuclear missile: a heavy rocket; the original's own blast stays and gets a huge fireball on top.
+  "shot":    {"hideOriginal": true, "prefab": {"bundle": "arsenal", "asset": "Rocket", "life": 0.5}},
+  "muzzle":  {"hideOriginal": true},
+  "impact":  {"hideOriginal": false, "prefab": {"bundle": "arsenal", "asset": "Blast", "life": 3.0, "scale": 8.0}}
+}

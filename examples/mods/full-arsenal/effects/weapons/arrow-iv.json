@@ -1,0 +1,6 @@
+{
+  // Arrow IV artillery: a heavy rocket and a big blast.
+  "shot":    {"hideOriginal": true, "prefab": {"bundle": "arsenal", "asset": "Rocket", "life": 0.5}},
+  "muzzle":  {"hideOriginal": true, "prefab": {"bundle": "arsenal", "asset": "Launch", "life": 0.3, "scale": 1.8}},
+  "impact":  {"hideOriginal": true, "prefab": {"bundle": "arsenal", "asset": "Blast", "life": 1.0, "scale": 3.0}}
+}

@@ -1,0 +1,8 @@
+{
+  "id": "big-explosions",
+  "name": "Big Explosions",
+  "version": "1.1",
+  "author": "OpenWarThink",
+  "description": "New destruction for mechs and vehicles: a fireball that climbs into a mushroom, a dust ring over the ground, burning chunks, and a wreck that burns under a column of black smoke. Bigger mechs blow up bigger. Only the look changes.",
+  "api": 1
+}
